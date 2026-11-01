@@ -39,7 +39,7 @@ Detail matriks peran dan poin ada di [`docs/roles-and-points.md`](docs/roles-and
 | Styling | Tailwind CSS 4, Framer Motion, Lucide React, React Icons |
 | Database | PostgreSQL + Prisma 7 (`@prisma/adapter-pg`) |
 | Autentikasi | NextAuth (Auth.js) v5 beta, email/password (bcryptjs) dan Google OAuth |
-| Pembayaran | Midtrans atau WinPay (dipilih lewat `PAYMENT_PROVIDER`) |
+| Pembayaran | WinPay (bawaan) atau Midtrans, dipilih lewat `PAYMENT_PROVIDER` |
 | Pengiriman | RajaOngkir via API Komerce |
 | Penyimpanan file | Supabase Storage (bucket `printables`) |
 | Email | Nodemailer (SMTP) |
@@ -59,8 +59,8 @@ Detail matriks peran dan poin ada di [`docs/roles-and-points.md`](docs/roles-and
 ### Instalasi
 
 ```bash
-git clone https://github.com/AjikiaRamadhani/LandingPageMarica.git
-cd LandingPageMarica
+git clone https://github.com/AjikiaRamadhani/TokoMarica.git
+cd TokoMarica
 npm install
 ```
 
@@ -74,6 +74,8 @@ npm run dev
 ```
 
 Buka http://localhost:3000.
+
+> `prisma db seed` mengisi konten landing page dan membuat akun contoh `admin@marica.id` (`ADMIN`), `kasir@marica.id` (`KASIR`), dan `bunda.rani@gmail.com` (`USER`) **tanpa kata sandi**. Atur kata sandi lewat halaman `/lupa-password` atau ubah peran langsung di tabel `users`. Jangan menjalankan seed pada database produksi tanpa meninjau datanya.
 
 ### Script
 
@@ -93,22 +95,24 @@ Salin contoh berikut ke `.env`. **Jangan commit file `.env` dan jangan menaruh n
 ```env
 # Database dan auth
 DATABASE_URL=
-DIRECT_URL=                      # opsional
+DIRECT_URL=                      # opsional, dipakai untuk migrasi
 AUTH_SECRET=
+NEXTAUTH_URL=http://localhost:3000
 NEXT_PUBLIC_SITE_URL=http://localhost:3000 # URL publik aplikasi; dipakai untuk redirect selesai pembayaran
 GOOGLE_CLIENT_ID=                # opsional
 GOOGLE_CLIENT_SECRET=            # opsional
 
 # Pembayaran
-PAYMENT_PROVIDER=midtrans        # midtrans atau winpay
+PAYMENT_PROVIDER=winpay          # winpay (bawaan bila kosong) atau midtrans
 MIDTRANS_SERVER_KEY=
 MIDTRANS_CLIENT_KEY=
 NEXT_PUBLIC_MIDTRANS_CLIENT_KEY=
 MIDTRANS_IS_PRODUCTION=false
+NEXT_PUBLIC_MIDTRANS_IS_PRODUCTION=false
 WINPAY_API_KEY=
 WINPAY_SECRET_KEY=
-WINPAY_CALLBACK_PUBLIC_KEY= # public key WinPay untuk verifikasi X-Signature callback
-WINPAY_REQUIRE_WEBHOOK_SIGNATURE=false # ubah true saat callback sandbox sudah menyediakan signature
+WINPAY_CALLBACK_PUBLIC_KEY= # public key WinPay untuk verifikasi X-Signature callback (alternatif: WINPAY_PUBLIC_KEY)
+WINPAY_REQUIRE_WEBHOOK_SIGNATURE=false # selalu wajib di production; ubah true di sandbox saat callback sudah menyediakan signature
 WINPAY_BASE_URL=
 WINPAY_IS_PRODUCTION=false
 WINPAY_INVOICE_EXPIRY_MINUTES=
@@ -137,6 +141,11 @@ WHATSAPP_PRINTABLE_TEMPLATE_LANGUAGE=
 
 # Pengiriman
 RAJAONGKIR_API_KEY=
+RAJAONGKIR_ORIGIN_ID=            # ID kota asal; cari lewat GET /api/shipping/destinations?search=nama-kota
+
+# Cron dan game
+SUBSCRIPTION_CRON_SECRET=        # atau CRON_SECRET; untuk melindungi /api/cron/subscriptions
+GAME_LAUNCH_TOKEN_SECRET=
 ```
 
 Daftarkan webhook pembayaran di dasbor penyedia:
@@ -148,9 +157,9 @@ Daftarkan webhook pembayaran di dasbor penyedia:
 
 ```
 app/            Halaman Next.js dan route UI (publik, akun, /admin, /kasir)
-app/api/        API route backend
+app/api/        API route backend (135 route, termasuk webhooks/ dan cron/)
 lib/            Logika bisnis: pembayaran, poin, inventaris, email, storage, pengiriman
-prisma/         schema.prisma, migration, seed
+prisma/         schema.prisma, migration (44), seed
 tests/          Unit test dan smoke test
 docs/           Dokumentasi tambahan (matriks peran dan poin)
 types/          Definisi tipe TypeScript
@@ -162,9 +171,11 @@ vercel.json     Definisi cron job langganan
 
 ## Database
 
-Skema ada di `prisma/schema.prisma` (PostgreSQL, 93 model dan 24 enum). Kelompok utama: akun dan autentikasi, konten landing page, artikel, produk dan toko, keranjang dan pesanan, inventaris, POS dan kasir, Playpass dan reservasi, event, printable, poin dan voucher, langganan, serta B2B.
+Skema ada di `prisma/schema.prisma` (PostgreSQL, 66 model dan 27 enum). Kelompok utama: akun dan autentikasi, konten landing page, artikel, produk dan toko, keranjang dan pesanan, inventaris, POS dan kasir, Playpass dan reservasi, event, printable, poin dan voucher, langganan, serta B2B.
 
-Stok dipisah dua lokasi: `ONLINE_WAREHOUSE` (checkout website) dan `MARICA_STORE` (POS). Perpindahan stok dilakukan lewat **Admin > Inventaris**; stok gabungan tidak boleh diubah manual.
+Stok dipisah dua lokasi: `ONLINE_WAREHOUSE` (checkout website) dan `MARICA_STORE` (POS). Perpindahan stok dilakukan lewat **Admin > Inventaris**; stok gabungan tidak boleh diubah manual. Stok website dikurangi saat pembayaran berhasil (`lib/settle-order-payment.ts`), bukan saat checkout.
+
+Kolom `midtransOrderId`, `midtransTransactionId`, dan `midtransSnapToken` dipakai bersama oleh WinPay dan Midtrans, jadi namanya tidak menunjukkan penyedia yang aktif.
 
 ## Pengujian
 
@@ -184,7 +195,7 @@ SMOKE_TEST=true npm run test:smoke
 - `npm run lint`: berhasil tanpa error; tersisa 29 warning non-blocking, terutama pola `set-state-in-effect`, penggunaan `<img>`, dan navigasi internal.
 - `npm run test:points`: 5/5 test berhasil.
 - Smoke test backend: 3 pass, 4 skip, 0 fail. Skenario yang skip membutuhkan fixture produk, akun admin, event aktif, atau printable aktif.
-- Black-box testing: 58 dari 59 skenario sesuai. Satu skenario yang belum sesuai adalah `PB-02`, yaitu stok belum berkurang setelah callback WinPay.
+- Black-box testing: 58 dari 59 skenario sesuai. Skenario `PB-02` (stok berkurang setelah callback WinPay) lulus pada simulasi callback di laporan penjualan online, tetapi belum final karena belum diuji dengan callback WinPay asli. [ISI: konfirmasi status PB-02 dan tanggal uji ulang]
 
 Smoke test yang membuat akun uji harus memakai database testing. Setelah pengujian selesai, hapus akun dan data uji agar tidak tercampur dengan data operasional.
 
@@ -198,15 +209,17 @@ Deploy otomatis lewat GitHub Actions (`Deploy toko.marica.id`) setiap ada push k
 4. Siapkan folder deploy dan tulis `tmp/restart.txt` (restart Passenger)
 5. Unggah ke hosting cPanel via FTP
 
-Secret yang harus ada di GitHub (Settings > Secrets): `DATABASE_URL`, `DIRECT_URL`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `FTP_SERVER`, `FTP_USERNAME`, `FTP_PASSWORD`, `FTP_SERVER_DIR`.
+Secret yang harus ada di GitHub (Settings > Secrets): `DATABASE_URL`, `DIRECT_URL`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `FTP_SERVER`, `FTP_USERNAME`, `FTP_PASSWORD`, `FTP_SERVER_DIR`. Variabel environment aplikasi (bagian Environment) diatur terpisah di server.
 
 ## Catatan untuk Pengembang Berikutnya
 
-- **Cron langganan:** `vercel.json` mendefinisikan cron untuk `/api/cron/subscriptions`, tetapi aplikasi berjalan di cPanel sehingga cron Vercel tidak berjalan. Fitur ini memang dijadwalkan untuk fase pengembangan berikutnya. Saat diaktifkan, panggil endpoint dari Cron Job cPanel menggunakan `SUBSCRIPTION_CRON_SECRET` atau `CRON_SECRET` melalui header `x-cron-secret`.
-- **WinPay:** integrasi checkout sudah memiliki fallback WhatsApp dan endpoint callback. Pengujian `PB-02` masih ditahan karena menunggu konfirmasi format callback dan konfigurasi signature dari pihak WinPay. Jangan menguji callback WinPay terhadap database produksi.
+- **Cron langganan:** `vercel.json` mendefinisikan cron untuk `/api/cron/subscriptions`, tetapi aplikasi berjalan di cPanel sehingga cron Vercel tidak berjalan. Fitur ini memang dijadwalkan untuk fase pengembangan berikutnya. Saat diaktifkan, panggil endpoint dari Cron Job cPanel menggunakan `SUBSCRIPTION_CRON_SECRET` atau `CRON_SECRET` melalui header `x-cron-secret`. Rute ini membuat tagihan lewat Midtrans Snap secara langsung, bukan lewat `lib/payment-gateway.ts`; periksa perilakunya bila `PAYMENT_PROVIDER=winpay`.
+- **Kedaluwarsa pesanan:** `expireStaleOrders` (batas 30 menit) hanya dipanggil saat admin membuka daftar pesanan (`GET /api/admin/orders`), jadi pesanan yang tidak dibayar tidak otomatis menjadi `EXPIRED`. Pertimbangkan memanggilnya dari cron.
+- **WinPay:** integrasi checkout sudah memiliki fallback WhatsApp dan endpoint callback. Pengujian pelunasan nyata masih ditahan karena menunggu aktivasi akun serta konfirmasi format callback dan signature dari pihak WinPay. Jangan menguji callback WinPay terhadap database produksi.
 - **Fixture smoke test:** checkout, POS, event, dan printable membutuhkan data uji khusus. Jangan mengisi ID fixture produksi ke konfigurasi lokal tanpa memastikan dampak stok, pesanan, dan poin.
 - **Autentikasi:** proyek memakai NextAuth/Auth.js v5 `5.0.0-beta.32`. Stable v5 belum tersedia; versi ini dipertahankan karena aplikasi sudah memakai API v5 (`auth()` dan `proxy.ts`). Upgrade hanya dilakukan setelah rilis stabil dan diuji.
 - **Keamanan API:** `proxy.ts` melindungi `/admin`, dan API admin memakai `requireAdmin` atau guard admin ekuivalen sebagai lapisan kedua.
+- **Poin lama:** checkout masih menerima `redeemPoints` (1 poin = Rp1) demi kompatibilitas. Alur yang direkomendasikan adalah menukar poin menjadi voucher; field lama dapat dihapus setelah tidak ada klien yang memakainya.
 - **Dokumentasi API:** endpoint baru wajib ditambahkan ke `lib/swagger.ts`.
 
 ## Kontak
