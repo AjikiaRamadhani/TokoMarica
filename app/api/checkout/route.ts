@@ -449,6 +449,10 @@ export async function POST(request: Request) {
     }
 
     console.error("[POST /api/checkout]", error);
-    return NextResponse.json({ error: "Gagal memproses checkout" }, { status: 500 });
+    const detail = error instanceof Error ? error.message : "Kesalahan checkout tidak diketahui";
+    return NextResponse.json(
+      { error: process.env.NODE_ENV === "production" ? "Gagal memproses checkout" : `Gagal memproses checkout: ${detail}` },
+      { status: 500 },
+    );
   }
 }
