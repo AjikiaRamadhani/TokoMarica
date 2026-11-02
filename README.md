@@ -224,4 +224,4 @@ Secret yang harus ada di GitHub (Settings > Secrets): `DATABASE_URL`, `DIRECT_UR
 
 ## Kontak
 
-Pihak yang melanjutkan projek dapat menghubungi: [ISI: nama dan kontak PIC Marica.id]
+Pihak yang melanjutkan projek dapat menghubungi: Mamat (Muhammad Noviyanto)
