@@ -4,7 +4,7 @@ Aplikasi web full-stack untuk Marica.id yang menggabungkan **etalase online** da
 
 - Situs produksi: https://toko.marica.id
 - Desain UI/UX: [Figma - Magang Marica.id](https://www.figma.com/design/1uU2Cp7BFR6lpyEHNyC47P/Magang-Marica.id?node-id=0-1&t=6ipAvxlV1a5zwqgb-1)
-- Dokumentasi API (lokal): http://localhost:3000/api-docs
+- Dokumentasi API (lokal): https://toko.marica.id/api-docs
 
 ## Fitur Utama
 
