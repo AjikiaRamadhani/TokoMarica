@@ -15,6 +15,12 @@ type MidtransStatus = {
   fraud_status?: string;
 };
 
+function isMidtransTransactionNotFound(error: unknown) {
+  if (!error || typeof error !== "object") return false;
+  const value = error as { httpStatusCode?: number; ApiResponse?: { status_code?: string } };
+  return value.httpStatusCode === 404 || value.ApiResponse?.status_code === "404";
+}
+
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -188,7 +194,36 @@ export async function POST(
         transaction: { status: (transactionId: string) => Promise<unknown> };
       }
     ).transaction;
-    const payment = (await transactionApi.status(order.midtransOrderId)) as MidtransStatus;
+    let payment: MidtransStatus;
+    try {
+      payment = (await transactionApi.status(order.midtransOrderId)) as MidtransStatus;
+    } catch (statusError) {
+      // Order lama bisa memiliki reference/token dari environment Midtrans
+      // berbeda. Jika transaksi tidak ditemukan, buat ulang Snap transaction
+      // agar user tetap bisa melanjutkan pembayaran dari order yang sama.
+      if (!isMidtransTransactionNotFound(statusError)) throw statusError;
+
+      const transaction = await snap.createTransaction({
+        transaction_details: { order_id: order.midtransOrderId, gross_amount: order.total },
+        customer_details: {
+          first_name: order.shippingName,
+          email: order.user.email ?? undefined,
+          phone: order.shippingPhone,
+        },
+        item_details: order.items.map((item) => ({
+          id: item.productId || item.id,
+          price: item.price,
+          quantity: item.quantity,
+          name: item.productName.slice(0, 50),
+        })),
+      });
+      const refreshed = await prisma.order.update({
+        where: { id: order.id },
+        data: { midtransSnapToken: transaction.token ?? transaction.redirect_url },
+        include: { items: true },
+      });
+      return NextResponse.json(await addProductAvailability([refreshed]).then(([item]) => item));
+    }
     const isPaid =
       payment.transaction_status === "settlement" ||
       (payment.transaction_status === "capture" && payment.fraud_status !== "deny");

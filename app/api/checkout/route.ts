@@ -449,9 +449,25 @@ export async function POST(request: Request) {
     }
 
     console.error("[POST /api/checkout]", error);
+    const providerResponse = typeof error === "object" && error !== null && "ApiResponse" in error
+      ? (error as { ApiResponse?: { status_code?: string; status_message?: string } }).ApiResponse
+      : undefined;
+    const errorCode = providerResponse?.status_code
+      ? `PAYMENT_PROVIDER_${providerResponse.status_code}`
+      : error instanceof Error && error.message === "MIDTRANS_ITEM_TOTAL_MISMATCH"
+        ? "MIDTRANS_ITEM_TOTAL_MISMATCH"
+        : error instanceof Error && error.message.includes("Invalid server key")
+          ? "MIDTRANS_INVALID_SERVER_KEY"
+          : "CHECKOUT_INTERNAL_ERROR";
     const detail = error instanceof Error ? error.message : "Kesalahan checkout tidak diketahui";
     return NextResponse.json(
-      { error: process.env.NODE_ENV === "production" ? "Gagal memproses checkout" : `Gagal memproses checkout: ${detail}` },
+      {
+        error: process.env.NODE_ENV === "production"
+          ? "Gagal memproses checkout"
+          : `Gagal memproses checkout: ${detail}`,
+        errorCode,
+        ...(providerResponse?.status_message ? { providerMessage: providerResponse.status_message } : {}),
+      },
       { status: 500 },
     );
   }
