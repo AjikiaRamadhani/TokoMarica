@@ -18,11 +18,8 @@ import {
   ArrowRight,
   LayoutDashboard,
   ShoppingCart,
-<<<<<<< HEAD
   Bell,
-=======
   PackageSearch,
->>>>>>> develop
 } from "lucide-react";
 import { useSession, signOut } from "next-auth/react";
 import { landingCompany } from "@/lib/landing-content";
