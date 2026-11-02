@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { CalendarDays } from "lucide-react";
@@ -10,6 +11,7 @@ import NewsletterForm from "../../components/Newsletterform";
 import ShareButton from "../../components/ShareButton";
 import { auth } from "@/lib/auth";
 import { categoryBadgeStyle, resolveCategoryColor } from "@/lib/category-color";
+import { prisma } from "@/lib/prisma";
 
 // Sebelumnya halaman ini pakai data statis dari `lib/artikel-data.ts`
 // (getArticleBySlug/getRelatedArticles). Sekarang datanya diambil dari
@@ -34,6 +36,7 @@ type ApiArticleDetail = {
   content: string;
   coverImageUrl: string | null;
   publishedAt: string | null;
+  updatedAt: string;
   views: number;
   category: ApiCategory | null;
   author: { id: string; name: string | null } | null;
@@ -59,6 +62,75 @@ type ApiArticleListItem = {
 type ArticlesListResponse = { articles: ApiArticleListItem[] };
 
 type Params = Promise<{ slug: string }>;
+
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.marica.id";
+
+async function getArticleMetadata(slug: string) {
+  return prisma.article.findFirst({
+    where: { slug, status: "PUBLISHED" },
+    select: {
+      title: true,
+      slug: true,
+      excerpt: true,
+      content: true,
+      coverImageUrl: true,
+      publishedAt: true,
+      updatedAt: true,
+      author: { select: { name: true } },
+      category: { select: { name: true } },
+    },
+  });
+}
+
+function stripHtml(value: string) {
+  return value.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+}
+
+function truncateDescription(value: string) {
+  const description = stripHtml(value);
+  return description.length > 160 ? `${description.slice(0, 157).trimEnd()}...` : description;
+}
+
+export async function generateMetadata(
+  { params }: { params: Params },
+): Promise<Metadata> {
+  const { slug } = await params;
+  const article = await getArticleMetadata(slug);
+
+  if (!article) {
+    return {
+      title: "Artikel tidak ditemukan",
+      robots: { index: false, follow: true },
+    };
+  }
+
+  const description = truncateDescription(article.excerpt || article.content);
+  const canonicalUrl = `${siteUrl}/artikel/${article.slug}`;
+  const image = article.coverImageUrl || "/images/og-image.png";
+
+  return {
+    title: article.title,
+    description,
+    alternates: { canonical: canonicalUrl },
+    openGraph: {
+      type: "article",
+      url: canonicalUrl,
+      title: article.title,
+      description,
+      publishedTime: article.publishedAt?.toISOString(),
+      modifiedTime: article.updatedAt.toISOString(),
+      authors: article.author?.name ? [article.author.name] : undefined,
+      section: article.category?.name,
+      images: [{ url: image, alt: article.title }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: article.title,
+      description,
+      images: [image],
+    },
+  };
+}
 
 // Server Component butuh URL absolut untuk fetch ke API sendiri (fetch
 // relatif seperti "/api/..." tidak bisa dipakai di server). Base URL
@@ -111,9 +183,39 @@ export default async function ArtikelDetailPage({ params }: { params: Params }) 
   const commentUser = session?.user?.name ? { name: session.user.name } : null;
 
   const related = await getRelatedArticles(article.category?.slug, article.slug, baseUrl);
+  const articleUrl = `${siteUrl}/artikel/${article.slug}`;
+  const articleImage = article.coverImageUrl
+    ? new URL(article.coverImageUrl, siteUrl).toString()
+    : `${siteUrl}${FALLBACK_COVER}`;
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "@id": articleUrl,
+    headline: article.title,
+    description: truncateDescription(article.excerpt || article.content),
+    image: [articleImage],
+    mainEntityOfPage: articleUrl,
+    datePublished: article.publishedAt ?? undefined,
+    dateModified: article.updatedAt,
+    author: {
+      "@type": "Person",
+      name: article.author?.name || "Marica",
+    },
+    publisher: {
+      "@type": "Organization",
+      name: "Marica",
+      url: siteUrl,
+    },
+  };
 
   return (
     <div className="min-h-screen bg-marica-cream">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c"),
+        }}
+      />
       {/* Keyframe animasi dipakai lewat Tailwind arbitrary value
           animate-[fadeInUp_...]. CSS animation jalan otomatis begitu
           elemen ini di-paint, jadi tetap berfungsi walau halaman ini
