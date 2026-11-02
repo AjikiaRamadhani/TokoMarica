@@ -192,7 +192,7 @@ function DownloadForm({
   }, [sessionStatus, session?.user?.email, session?.user?.name]);
 
   const update = (field: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
-    setForm((prev) => ({ ...prev, [field]: e.target.value }));
+    setForm((prev) => ({ ...prev, [field]: field === "whatsapp" ? e.target.value.replace(/\D/g, "") : e.target.value }));
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -371,6 +371,9 @@ function DownloadForm({
               <input
                 required
                 type="tel"
+                inputMode="numeric"
+                pattern="[0-9]{8,15}"
+                maxLength={15}
                 value={form.whatsapp}
                 onChange={update("whatsapp")}
                 placeholder="812-xxxx-xxxx"

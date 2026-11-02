@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { auditAction } from "@/lib/audit";
 import { getPlaypassSlotAvailability, combineDateAndMinutes, dateKey, parseDateInput, parseTimeInput } from "@/lib/playpass-booking";
 import { sendPlaypassTicketEmailIfNeeded } from "@/lib/playpass-ticket-mailer";
-import { validateInteger, validateOptionalText, validateText } from "@/lib/request-validation";
+import { validateInteger, validatePhone, validateText } from "@/lib/request-validation";
 import crypto from "crypto";
 import { consumeFnbStock, normalizeParticipants, resolveFnbItems } from "@/lib/fnb";
 
@@ -34,8 +34,8 @@ export async function POST(request: Request) {
     const date = validateText(body.date, "Tanggal kunjungan", 20);
     const startTime = validateText(body.startTime, "Jam kunjungan", 10);
     const quantity = validateInteger(body.quantity ?? 1, "Jumlah tiket", 1);
-    const phone = validateOptionalText(body.customerPhone, "Nomor WhatsApp", 40);
-    if (packageId.error || date.error || startTime.error || quantity.error || phone.error || typeof packageId.value !== "string" || typeof date.value !== "string" || typeof startTime.value !== "string" || typeof quantity.value !== "number") {
+    const phone = body.customerPhone === undefined || body.customerPhone === "" ? { value: null as string | null } : validatePhone(body.customerPhone, "Nomor WhatsApp");
+    if (packageId.error || date.error || startTime.error || quantity.error || ("error" in phone && phone.error) || typeof packageId.value !== "string" || typeof date.value !== "string" || typeof startTime.value !== "string" || typeof quantity.value !== "number") {
       return NextResponse.json({ error: "Data booking Playpass tidak valid" }, { status: 400 });
     }
     const participants = normalizeParticipants(body.participants);

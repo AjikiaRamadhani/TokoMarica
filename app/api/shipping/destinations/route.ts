@@ -16,9 +16,13 @@ export async function GET(request: Request) {
     const destinations = await searchDestination(search);
     return NextResponse.json(destinations);
   } catch (error) {
+    const message = error instanceof Error ? error.message : "";
+    if (/domestic destinations data not found/i.test(message)) {
+      return NextResponse.json([]);
+    }
     console.error("[GET /api/shipping/destinations]", error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Gagal mencari destinasi" },
+      { error: message || "Gagal mencari destinasi" },
       { status: 500 }
     );
   }

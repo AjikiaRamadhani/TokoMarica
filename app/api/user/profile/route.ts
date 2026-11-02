@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { findSessionUser } from "@/lib/session-user";
+import { validatePhone } from "@/lib/request-validation";
 
 // GET /api/user/profile
 // Mengambil data profil user yang sedang login beserta statistik akun
@@ -79,8 +80,8 @@ export async function PATCH(request: Request) {
 
     // Validasi nomor HP (opsional, tapi kalau diisi harus format yang valid)
     if (whatsapp !== undefined && whatsapp !== "") {
-      const cleaned = whatsapp.replace(/[\s\-().+]/g, "");
-      if (!/^[0-9]{8,15}$/.test(cleaned)) {
+      const phoneCheck = validatePhone(whatsapp, "Nomor HP");
+      if (phoneCheck.error) {
         return NextResponse.json(
           { error: "Format nomor HP tidak valid (contoh: 08123456789)" },
           { status: 400 }
@@ -115,4 +116,3 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: "Gagal memperbarui profil" }, { status: 500 });
   }
 }
-

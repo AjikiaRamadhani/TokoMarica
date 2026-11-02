@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { snap } from "@/lib/midtrans";
 import { preorderIsOpen, preorderReservationNumber } from "@/lib/preorder";
-import { validateInteger, validateOptionalText } from "@/lib/request-validation";
+import { validateInteger, validatePhone } from "@/lib/request-validation";
 
 export async function GET() {
   const now = new Date();
@@ -27,8 +27,8 @@ export async function POST(request: Request) {
   try {
     const body = (await request.json()) as { campaignId?: string; quantity?: number; whatsapp?: string };
     const quantity = validateInteger(body.quantity ?? 1, "Jumlah pre-order", 1);
-    const whatsapp = validateOptionalText(body.whatsapp, "WhatsApp", 40);
-    if (!body.campaignId || quantity.error || whatsapp.error || typeof quantity.value !== "number") return NextResponse.json({ error: "Data pre-order tidak valid" }, { status: 400 });
+    const whatsapp = body.whatsapp === undefined || body.whatsapp === "" ? { value: null as string | null } : validatePhone(body.whatsapp, "WhatsApp");
+    if (!body.campaignId || quantity.error || ("error" in whatsapp && whatsapp.error) || typeof quantity.value !== "number") return NextResponse.json({ error: "Data pre-order tidak valid" }, { status: 400 });
     const campaign = await prisma.preOrderCampaign.findUnique({ where: { id: body.campaignId }, include: { product: true } });
     if (!campaign || campaign.status !== "PUBLISHED" || !preorderIsOpen(campaign.preorderOpenAt, campaign.preorderCloseAt)) return NextResponse.json({ error: "Pre-order belum dibuka atau sudah ditutup" }, { status: 409 });
     if (campaign.stockLimit !== null && campaign.reservedQuantity + quantity.value > campaign.stockLimit) return NextResponse.json({ error: "Sisa kuota pre-order tidak mencukupi" }, { status: 409 });
