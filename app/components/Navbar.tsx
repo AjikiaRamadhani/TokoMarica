@@ -18,6 +18,7 @@ import {
   ArrowRight,
   LayoutDashboard,
   ShoppingCart,
+  PackageSearch,
 } from "lucide-react";
 import { useSession, signOut } from "next-auth/react";
 
@@ -621,6 +622,14 @@ export default function Navbar() {
                       <User className="h-4 w-4" />
                       Profil &amp; Keluarga
                     </Link>
+                    <Link
+                      href="/belanja/pesanan-saya"
+                      onClick={() => setProfileOpen(false)}
+                      className="flex w-full items-center gap-2.5 border-b border-black/5 px-4 py-3 font-body text-sm font-medium text-marica-ink-soft transition hover:bg-marica-cream hover:text-marica-ink"
+                    >
+                      <PackageSearch className="h-4 w-4" />
+                      Pesanan Saya
+                    </Link>
                     {isKasir && (
                       <Link
                         href="/kasir"
@@ -820,6 +829,14 @@ export default function Navbar() {
                     >
                       <User className="h-4 w-4" />
                       Profil &amp; Keluarga
+                    </Link>
+                    <Link
+                      href="/belanja/pesanan-saya"
+                      onClick={() => setIsOpen(false)}
+                      className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg border border-marica-amber/30 bg-marica-amber/10 py-2 font-body text-sm font-semibold text-marica-amber-text"
+                    >
+                      <PackageSearch className="h-4 w-4" />
+                      Pesanan Saya
                     </Link>
                     {isKasir && (
                       <Link

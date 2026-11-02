@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Search, ArrowLeft, Store, PackageSearch, Loader2 } from "lucide-react";
+import { Search, ArrowLeft, Store, PackageSearch, Loader2, Sparkles } from "lucide-react";
 
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
@@ -16,13 +16,18 @@ import {
   type ApiOrderStatus,
 } from "../../components/belanja/types";
 
-const TABS: { key: "Semua" | ApiOrderStatus; label: string }[] = [
+type PreorderTab = "PREORDER";
+type OrderTab = "Semua" | ApiOrderStatus | PreorderTab;
+type PreorderSummary = { reservationNumber: string; quantity: number; totalPrice: number; status: string; campaign: { title: string; product: { name: string } } };
+
+const TABS: { key: OrderTab; label: string }[] = [
   { key: "Semua", label: "Semua Pesanan" },
   { key: "PENDING_PAYMENT", label: ORDER_STATUS_LABEL.PENDING_PAYMENT },
   { key: "PROCESSING", label: ORDER_STATUS_LABEL.PROCESSING },
   { key: "SHIPPED", label: ORDER_STATUS_LABEL.SHIPPED },
   { key: "DELIVERED", label: ORDER_STATUS_LABEL.DELIVERED },
   { key: "CANCELLED", label: ORDER_STATUS_LABEL.CANCELLED },
+  { key: "PREORDER", label: "Pre-order" },
 ];
 
 function formatRupiah(value: number): string {
@@ -45,6 +50,7 @@ export default function PesananSayaPage() {
   const router = useRouter();
 
   const [orders, setOrders] = useState<ApiOrder[]>([]);
+  const [preorders, setPreorders] = useState<PreorderSummary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] =
@@ -52,6 +58,7 @@ export default function PesananSayaPage() {
   const [searchInput, setSearchInput] = useState("");
   const [payingOrderId, setPayingOrderId] = useState<string | null>(null);
   const [payError, setPayError] = useState<string | null>(null);
+  const [preordersLoading, setPreordersLoading] = useState(true);
 
   const loadOrders = () => {
     setIsLoading(true);
@@ -84,10 +91,23 @@ export default function PesananSayaPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    fetch("/api/preorders/mine", { cache: "no-store" })
+      .then(async (response) => {
+        const data = await response.json();
+        if (response.status === 401) return null;
+        if (!response.ok) throw new Error(data.error ?? "Gagal memuat pre-order");
+        return data as PreorderSummary[];
+      })
+      .then((data) => { if (data) setPreorders(data); })
+      .catch(() => undefined)
+      .finally(() => setPreordersLoading(false));
+  }, []);
+
   const filteredOrders = useMemo(() => {
     const q = searchInput.trim().toLowerCase();
     return orders.filter((order) => {
-      const matchesTab = activeTab === "Semua" || order.status === activeTab;
+      const matchesTab = activeTab !== "PREORDER" && (activeTab === "Semua" || order.status === activeTab);
       const matchesSearch =
         !q ||
         order.orderNumber.toLowerCase().includes(q) ||
@@ -95,6 +115,11 @@ export default function PesananSayaPage() {
       return matchesTab && matchesSearch;
     });
   }, [orders, activeTab, searchInput]);
+
+  const filteredPreorders = useMemo(() => {
+    const q = searchInput.trim().toLowerCase();
+    return preorders.filter((item) => !q || item.reservationNumber.toLowerCase().includes(q) || item.campaign.title.toLowerCase().includes(q) || item.campaign.product.name.toLowerCase().includes(q));
+  }, [preorders, searchInput]);
 
   const handleBayarSekarang = async (order: ApiOrder) => {
     setPayError(null);
@@ -214,19 +239,31 @@ export default function PesananSayaPage() {
               </div>
             )}
 
-            {!isLoading && !error && filteredOrders.length === 0 && (
+            {activeTab !== "PREORDER" && !isLoading && !error && filteredOrders.length === 0 && (
               <div className="flex flex-col items-center gap-3 rounded-2xl border border-marica-ink/5 bg-white py-16 text-center shadow-sm">
                 <PackageSearch className="h-10 w-10 text-marica-ink-soft/40" />
+                <p className="font-display text-base font-semibold text-marica-ink">Tidak ada pesanan</p>
+                <p className="max-w-xs font-body text-sm text-marica-ink-soft">Belum ada pesanan yang cocok dengan pencarian atau filter ini.</p>
+              </div>
+            )}
+
+            {activeTab === "PREORDER" && !preordersLoading && !error && filteredPreorders.length === 0 && (
+              <div className="flex flex-col items-center gap-3 rounded-2xl border border-marica-ink/5 bg-white py-16 text-center shadow-sm">
+                <Sparkles className="h-10 w-10 text-marica-ink-soft/40" />
                 <p className="font-display text-base font-semibold text-marica-ink">
-                  Tidak ada pesanan
+                  Belum ada pre-order
                 </p>
                 <p className="max-w-xs font-body text-sm text-marica-ink-soft">
-                  Belum ada pesanan yang cocok dengan pencarian atau filter ini.
+                  Belum ada pembelian rilis eksklusif yang cocok dengan pencarian ini.
                 </p>
               </div>
             )}
 
-            {!isLoading &&
+            {activeTab === "PREORDER" && preordersLoading && <div className="h-40 animate-pulse rounded-2xl bg-marica-ink/5" />}
+
+            {activeTab === "PREORDER" && !preordersLoading && !error && filteredPreorders.map((item) => <PreorderCard key={item.reservationNumber} item={item} />)}
+
+            {activeTab !== "PREORDER" && !isLoading &&
               !error &&
               filteredOrders.map((order) => (
                 <OrderCard
@@ -250,6 +287,12 @@ export default function PesananSayaPage() {
 /* -------------------------------------------------------------------------- */
 /*  Order card                                                                */
 /* -------------------------------------------------------------------------- */
+
+function PreorderCard({ item }: { item: PreorderSummary }) {
+  const statusLabel: Record<string, string> = { PENDING_PAYMENT: "Menunggu pembayaran", PAID: "Berhasil", CANCELLED: "Dibatalkan", EXPIRED: "Kedaluwarsa" };
+  const paid = item.status === "PAID";
+  return <div className="rounded-2xl border border-marica-amber/20 bg-white p-5 shadow-[0_10px_28px_rgba(120,60,10,0.06)] sm:p-6"><div className="flex flex-wrap items-center justify-between gap-2 border-b border-marica-ink/5 pb-4"><span className="flex items-center gap-2 font-body text-sm font-semibold text-marica-ink"><Sparkles className="h-4 w-4 text-marica-amber-dark" />Rilis Eksklusif</span><span className="flex items-center gap-2"><span className="font-body text-xs text-marica-ink-soft">{item.reservationNumber}</span><span className="rounded-full bg-marica-amber/20 px-2.5 py-1 font-body text-[11px] font-semibold text-marica-amber-dark">{statusLabel[item.status] ?? item.status}</span></span></div><div className="py-4"><p className="font-body text-sm font-semibold text-marica-ink sm:text-base">{item.campaign.title}</p><p className="mt-1 text-sm text-marica-ink-soft">{item.campaign.product.name} · {item.quantity} unit</p></div><div className="flex flex-wrap items-center justify-between gap-3 border-t border-marica-ink/5 pt-4"><div><p className="font-body text-xs text-marica-ink-soft">Total Pre-order</p><p className="font-display text-xl font-bold text-marica-amber-text">{formatRupiah(item.totalPrice)}</p></div><Link href={`/preorder/hasil?reservation=${encodeURIComponent(item.reservationNumber)}`} className="rounded-full bg-marica-ink px-5 py-2 font-body text-sm font-semibold text-white">{paid ? "Lihat detail" : "Cek pembayaran"}</Link></div></div>;
+}
 
 function OrderCard({
   order,

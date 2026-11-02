@@ -14,11 +14,7 @@ function siteUrl() {
 function finishRedirectUrl(orderId: string) {
   const baseUrl = siteUrl();
   const encoded = encodeURIComponent(orderId);
-  if (orderId.startsWith("TBL-")) return `${baseUrl}/reservasi/tiket/${encoded}`;
-  if (orderId.startsWith("PPB-")) return `${baseUrl}/playpass/tiket/${encoded}`;
-  if (orderId.startsWith("POR-")) return `${baseUrl}/preorder/hasil?reservation=${encoded}`;
-  if (orderId.startsWith("EVT-")) return `${baseUrl}/event/tiket/${encoded}`;
-  return `${baseUrl}/belanja/pesanan-saya?order=${encoded}`;
+  return `${baseUrl}/pembayaran/hasil?order_id=${encoded}`;
 }
 
 type PaymentResult = {

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Plus, Search, Pencil, Trash2, ImageOff, Tags } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, ImageOff, Tags, Video } from "lucide-react";
 import DeleteArticleModal from "../../components/admin/DeleteArticleModal";
 import { categoryBadgeStyle } from "@/lib/category-color";
 
@@ -18,6 +18,8 @@ type ApiArticle = {
   title: string;
   slug: string;
   coverImageUrl: string | null;
+  videoUrl: string | null;
+  isVideoFeatured: boolean;
   status: "DRAFT" | "PUBLISHED";
   publishedAt: string | null;
   createdAt: string;
@@ -36,6 +38,7 @@ type ArticlesResponse = {
 
 const TABS = [
   { label: "Semua", value: "" },
+  { label: "Video", value: "video" },
   { label: "Published", value: "PUBLISHED" },
   { label: "Draft", value: "DRAFT" },
 ] as const;
@@ -83,6 +86,10 @@ export default function AdminArtikelPage() {
         limit: String(LIMIT),
       });
       if (activeTab) params.set("status", activeTab);
+      if (activeTab === "video") {
+        params.delete("status");
+        params.set("media", "video");
+      }
       if (debouncedQuery) params.set("search", debouncedQuery);
 
       const res = await fetch(`/api/admin/articles?${params.toString()}`, {
@@ -281,6 +288,11 @@ export default function AdminArtikelPage() {
                         <span className="line-clamp-2 max-w-xs font-body text-sm font-medium text-marica-ink">
                           {article.title}
                         </span>
+                        {article.videoUrl && (
+                          <span title={article.isVideoFeatured ? "Video unggulan" : "Memiliki video"} className="inline-flex shrink-0 items-center gap-1 rounded-full bg-marica-amber/15 px-2 py-1 text-[10px] font-semibold text-marica-amber-text">
+                            <Video className="h-3 w-3" />{article.isVideoFeatured ? "Unggulan" : "Video"}
+                          </span>
+                        )}
                       </div>
                     </td>
                     <td className="py-3 pr-4">

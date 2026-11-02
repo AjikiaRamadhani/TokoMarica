@@ -1,31 +1,7 @@
-"use client";
+import { Suspense } from "react";
+import PaymentSuccessClient from "./PaymentSuccessClient";
 
-import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
-import Link from "next/link";
-import { CheckCircle2, Clock3, Loader2, Package } from "lucide-react";
-import Navbar from "@/app/components/Navbar";
-import Footer from "@/app/components/Footer";
-import type { ApiOrder } from "@/app/components/belanja/types";
-
-export default function PaymentSuccessPage() {
-  const params = useSearchParams();
-  const orderId = params.get("order");
-  const [order, setOrder] = useState<ApiOrder | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    if (!orderId) { setError("Nomor pesanan tidak ditemukan."); setLoading(false); return; }
-    fetch(`/api/orders/${encodeURIComponent(orderId)}`, { cache: "no-store" }).then(async (response) => {
-      const data = await response.json();
-      if (!response.ok) throw new Error(data?.error ?? "Pesanan tidak ditemukan");
-      setOrder(data as ApiOrder);
-    }).catch((fetchError) => setError(fetchError instanceof Error ? fetchError.message : "Pesanan tidak ditemukan")).finally(() => setLoading(false));
-  }, [orderId]);
-
-  const confirmed = Boolean(order && order.status !== "PENDING_PAYMENT" && order.status !== "EXPIRED");
-  return <div className="flex min-h-screen flex-col bg-[#fdf8f1] text-marica-ink"><Navbar /><main className="flex flex-1 items-center justify-center px-5 py-14"><section className="w-full max-w-xl rounded-3xl bg-white p-7 text-center shadow-sm sm:p-10">{loading ? <Loader2 className="mx-auto h-8 w-8 animate-spin text-marica-amber-dark" /> : error ? <><Clock3 className="mx-auto h-14 w-14 text-marica-amber-dark" /><h1 className="mt-5 font-display text-2xl font-bold">Status pesanan belum tersedia</h1><p className="mt-2 text-sm text-marica-ink-soft">{error}</p></> : <><span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-marica-green/15 text-marica-green">{confirmed ? <CheckCircle2 className="h-9 w-9" /> : <Clock3 className="h-9 w-9" />}</span><h1 className="mt-5 font-display text-3xl font-bold">{confirmed ? "Pembayaran berhasil" : "Menunggu pembayaran"}</h1><p className="mt-3 text-sm leading-relaxed text-marica-ink-soft">{confirmed ? "Pesanan kamu sudah tercatat. Kami akan memproses dan mengirimkannya sesuai alur pengiriman." : "Pesanan sudah dibuat, tetapi pembayaran belum terkonfirmasi. Kamu masih bisa melanjutkan pembayaran dari detail pesanan."}</p>{order && <div className="mt-7 rounded-2xl bg-marica-sky-light/25 p-5 text-left text-sm"><Row label="Nomor pesanan" value={order.orderNumber} /><Row label="Total" value={`Rp ${order.total.toLocaleString("id-ID")}`} /><Row label="Status" value={order.status} /></div>}<div className="mt-6 flex flex-wrap justify-center gap-3 text-sm font-semibold"><Link href={order ? `/belanja/pesanan-saya/${order.id}` : "/belanja/pesanan-saya"} className="rounded-full bg-marica-ink px-4 py-2 text-white"><Package className="mr-2 inline h-4 w-4" />Lihat detail pesanan</Link><Link href="/belanja" className="rounded-full border border-black/10 px-4 py-2">Lanjut belanja</Link></div></>}</section></main><Footer /></div>;
+export default async function PaymentSuccessPage({ searchParams }: { searchParams: Promise<{ order?: string }> }) {
+  const params = await searchParams;
+  return <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-[#fdf8f1]" />}><PaymentSuccessClient orderId={params.order ?? null} /></Suspense>;
 }
-
-function Row({ label, value }: { label: string; value: string }) { return <div className="flex justify-between gap-4 border-b border-black/5 py-2.5 last:border-0"><span className="text-marica-ink-soft">{label}</span><strong className="text-right">{value}</strong></div>; }

@@ -58,14 +58,40 @@ export const MONTH_LABELS_ID = [
   "Desember",
 ];
 
+const JAKARTA_TIME_ZONE = "Asia/Jakarta";
+
+function jakartaDateParts(date = new Date()) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: JAKARTA_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+
+  return {
+    year: Number(parts.find((part) => part.type === "year")?.value),
+    month: Number(parts.find((part) => part.type === "month")?.value) - 1,
+    day: Number(parts.find((part) => part.type === "day")?.value),
+  };
+}
+
+export function todayInJakarta() {
+  const { year, month, day } = jakartaDateParts();
+  return new Date(year, month, day);
+}
+
+function dateKeyInJakarta(date = new Date()) {
+  const { year, month, day } = jakartaDateParts(date);
+  return `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
 export function formatLongDateID(iso: string) {
-  const date = new Date(`${iso}T00:00:00`);
+  const [year, month, day] = iso.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
   const days = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
-  return `${days[date.getDay()]}, ${date.getDate()} ${MONTH_LABELS_ID[date.getMonth()]} ${date.getFullYear()}`;
+  return `${days[date.getUTCDay()]}, ${day} ${MONTH_LABELS_ID[month - 1]} ${year}`;
 }
 
 export function isEventExpired(iso: string) {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  return new Date(`${iso}T00:00:00`) < today;
+  return iso < dateKeyInJakarta();
 }

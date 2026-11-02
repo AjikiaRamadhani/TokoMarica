@@ -40,10 +40,15 @@ export async function GET(request: Request) {
     }
     const categorySlug = searchParams.get("category");
     const search = searchParams.get("search");
+    const media = searchParams.get("media");
+    if (media && media !== "video") {
+      return NextResponse.json({ error: "Media artikel tidak valid" }, { status: 400 });
+    }
 
     const where = {
       ...(status ? { status: status as "DRAFT" | "PUBLISHED" } : {}),
       ...(categorySlug && categorySlug !== "semua" ? { category: { slug: categorySlug } } : {}),
+      ...(media === "video" ? { videoUrl: { not: null } } : {}),
       ...(search
         ? { title: { contains: search, mode: "insensitive" as const } }
         : {}),
