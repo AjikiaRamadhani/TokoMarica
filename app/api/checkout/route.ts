@@ -462,6 +462,7 @@ export async function POST(request: Request) {
           ? "MIDTRANS_INVALID_SERVER_KEY"
           : "CHECKOUT_INTERNAL_ERROR";
     const detail = error instanceof Error ? error.message : "Kesalahan checkout tidak diketahui";
+    const debugCheckout = process.env.CHECKOUT_DEBUG_ERRORS === "true";
     return NextResponse.json(
       {
         error: process.env.NODE_ENV === "production"
@@ -469,6 +470,14 @@ export async function POST(request: Request) {
           : `Gagal memproses checkout: ${detail}`,
         errorCode,
         ...(providerResponse?.status_message ? { providerMessage: providerResponse.status_message } : {}),
+        ...(debugCheckout
+          ? {
+              debug: {
+                name: error instanceof Error ? error.name : typeof error,
+                message: detail.slice(0, 500),
+              },
+            }
+          : {}),
       },
       { status: 500 },
     );
