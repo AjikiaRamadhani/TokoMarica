@@ -8,6 +8,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
       - name: Checkout
@@ -61,3 +62,4 @@ jobs:
           local-dir: ./deploy/
           protocol: ftp
           port: 21
+          timeout: 120000
