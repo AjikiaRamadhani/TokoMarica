@@ -560,7 +560,7 @@ function AddressForm({
         .finally(() => {
           if (!cancelled) setDestLoading(false);
         });
-    }, 350);
+    }, 500);
     return () => {
       cancelled = true;
       clearTimeout(timer);
@@ -670,6 +670,9 @@ function AddressForm({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!isValid || !selectedDest) return;
+    if (!/^[0-9]{8,15}$/.test(phone)) return;
+    if (!/^[0-9]{5}$/.test(postalCode)) return;
+    if (fullAddress.trim().length < 10) return;
 
     const label_ = destinationLabel(selectedDest);
     // Best-effort split of "Kecamatan, Kota, Provinsi" into city/province —
@@ -758,7 +761,10 @@ function AddressForm({
         <Field label="No. Telepon" icon={Phone}>
           <input
             value={phone}
-            onChange={(e) => setPhone(e.target.value)}
+            inputMode="numeric"
+            pattern="[0-9]{8,15}"
+            maxLength={15}
+            onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
             placeholder="08xxxxxxxxxx"
             className={inputClass}
           />
@@ -832,9 +838,11 @@ function AddressForm({
         <Field label="Kode Pos">
           <input
             value={postalCode}
-            onChange={(e) => setPostalCode(e.target.value)}
-            placeholder="cth. 56117"
             inputMode="numeric"
+            pattern="[0-9]{5}"
+            maxLength={5}
+            onChange={(e) => setPostalCode(e.target.value.replace(/\D/g, ""))}
+            placeholder="cth. 56117"
             className={inputClass}
           />
         </Field>

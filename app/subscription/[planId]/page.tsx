@@ -16,6 +16,14 @@ import {
 } from "lucide-react";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
+type CityResult = {
+  id: string;
+  city: string;
+  province: string;
+  postalCode: string;
+  regency?: string;
+  regencyId?: string;
+};
 
 type SubscriptionPlan = {
   id: string;
@@ -31,6 +39,7 @@ type ShippingForm = {
   shippingPhone: string;
   shippingAddress: string;
   shippingCity: string;
+  shippingDistrict: string;
   shippingProvince: string;
   shippingPostalCode: string;
 };
@@ -57,6 +66,7 @@ const emptyForm: ShippingForm = {
   shippingPhone: "",
   shippingAddress: "",
   shippingCity: "",
+  shippingDistrict: "",
   shippingProvince: "",
   shippingPostalCode: "",
 };
@@ -75,6 +85,73 @@ export default function SubscriptionDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [children, setChildren] = useState<ChildProfile[]>([]);
   const [childProfileId, setChildProfileId] = useState("");
+  const [cityQuery, setCityQuery] = useState("");
+  const [cityResults, setCityResults] = useState<CityResult[]>([]);
+  const [cityLoading, setCityLoading] = useState(false);
+  const [selectedCity, setSelectedCity] = useState<CityResult | null>(null);
+  const [districtQuery, setDistrictQuery] = useState("");
+  const [districtResults, setDistrictResults] = useState<CityResult[]>([]);
+  const [districtLoading, setDistrictLoading] = useState(false);
+  const [selectedDistrict, setSelectedDistrict] = useState<CityResult | null>(null);
+
+  useEffect(() => {
+    const query = cityQuery.trim();
+    if (selectedCity && selectedCity.city === query) return;
+    if (query.length < 3) {
+      return;
+    }
+
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      setCityLoading(true);
+      fetch(`/api/locations/cities?search=${encodeURIComponent(query)}`, {
+        cache: "no-store",
+      })
+        .then(async (response) => {
+          const data = await response.json().catch(() => null);
+          if (!response.ok) throw new Error(data?.error ?? "Gagal mencari kota");
+          return data;
+        })
+        .then((data) => {
+          if (cancelled) return;
+          setCityResults(Array.isArray(data) ? data : []);
+        })
+        .catch(() => {
+          if (!cancelled) setCityResults([]);
+        })
+        .finally(() => {
+          if (!cancelled) setCityLoading(false);
+        });
+    }, 500);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [cityQuery, selectedCity]);
+
+  useEffect(() => {
+    const query = districtQuery.trim();
+    if (!selectedCity?.regencyId || query.length < 3) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setDistrictResults([]);
+      return;
+    }
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      setDistrictLoading(true);
+      fetch(`/api/locations/cities?search=${encodeURIComponent(query)}&regencyId=${encodeURIComponent(selectedCity.regencyId!)}&regencyName=${encodeURIComponent(selectedCity.city)}`, { cache: "no-store" })
+        .then(async (response) => {
+          const data = await response.json().catch(() => null);
+          if (!response.ok) throw new Error(data?.error ?? "Gagal mencari kecamatan");
+          return data;
+        })
+        .then((data) => { if (!cancelled) setDistrictResults(Array.isArray(data) ? data : []); })
+        .catch(() => { if (!cancelled) setDistrictResults([]); })
+        .finally(() => { if (!cancelled) setDistrictLoading(false); });
+    }, 500);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [districtQuery, selectedCity]);
 
   useEffect(() => {
     if (!planId) return;
@@ -99,6 +176,22 @@ export default function SubscriptionDetailPage() {
   const submitSubscription = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!plan) return;
+    if (!/^[0-9]{8,15}$/.test(form.shippingPhone)) {
+      setError("Nomor WhatsApp harus berupa angka 8-15 digit.");
+      return;
+    }
+    if (!/^[0-9]{5}$/.test(form.shippingPostalCode)) {
+      setError("Kode pos harus berupa 5 digit angka.");
+      return;
+    }
+    if (!selectedCity || !selectedDistrict) {
+      setError("Pilih kota dan kecamatan dari hasil pencarian terlebih dahulu.");
+      return;
+    }
+    if (form.shippingAddress.trim().length < 10) {
+      setError("Alamat harus diisi dengan lengkap.");
+      return;
+    }
     setIsSubmitting(true);
     setError(null);
 
@@ -106,7 +199,12 @@ export default function SubscriptionDetailPage() {
       const response = await fetch("/api/subscriptions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ planId: plan.id, childProfileId: childProfileId || undefined, ...form }),
+        body: JSON.stringify({
+          planId: plan.id,
+          childProfileId: childProfileId || undefined,
+          ...form,
+          shippingAddress: `${form.shippingAddress.trim()}, Kecamatan ${form.shippingDistrict}`,
+        }),
       });
       const data = await response.json().catch(() => null);
       if (response.status === 401) {
@@ -253,13 +351,85 @@ export default function SubscriptionDetailPage() {
               {([
                 ["shippingName", "Nama penerima", "Budi atau nama orang tua"],
                 ["shippingPhone", "Nomor WhatsApp", "08xxxxxxxxxx"],
-                ["shippingCity", "Kota", "Jakarta Selatan"],
+                ["shippingCity", "Kota / Kabupaten", "Sukoharjo"],
+                ["shippingDistrict", "Kecamatan", "Bulu"],
                 ["shippingProvince", "Provinsi", "DKI Jakarta"],
                 ["shippingPostalCode", "Kode pos", "12345"],
               ] as const).map(([name, label, placeholder]) => (
                 <label key={name} className="text-sm font-semibold">
                   {label}
-                  <input required value={form[name]} onChange={(event) => setForm((current) => ({ ...current, [name]: event.target.value }))} placeholder={placeholder} className="mt-2 w-full rounded-xl border border-marica-ink/15 bg-white px-4 py-3 text-sm font-normal outline-none transition focus:border-marica-amber-dark focus:ring-2 focus:ring-marica-amber/20" />
+                  {name === "shippingCity" || name === "shippingDistrict" ? (
+                    <div className="relative">
+                      <input
+                        required
+                        value={name === "shippingCity" ? cityQuery : districtQuery}
+                        disabled={name === "shippingDistrict" && !selectedCity}
+                        onChange={(event) => {
+                          if (name === "shippingCity") {
+                            setCityQuery(event.target.value);
+                            setSelectedCity(null);
+                            setSelectedDistrict(null);
+                            setDistrictQuery("");
+                          } else {
+                            setDistrictQuery(event.target.value);
+                            setSelectedDistrict(null);
+                          }
+                          setForm((current) => ({
+                            ...current,
+                            [name]: event.target.value,
+                            ...(name === "shippingCity" ? { shippingProvince: "", shippingDistrict: "" } : {}),
+                          }));
+                        }}
+                        placeholder={placeholder}
+                        autoComplete="off"
+                        className="mt-2 w-full rounded-xl border border-marica-ink/15 bg-white px-4 py-3 text-sm font-normal outline-none transition focus:border-marica-amber-dark focus:ring-2 focus:ring-marica-amber/20"
+                      />
+                      {((name === "shippingCity" ? cityQuery : districtQuery).trim().length >= 3) &&
+                        (name === "shippingCity" ? !selectedCity : !selectedDistrict) && (
+                        <div className="absolute inset-x-0 top-full z-10 mt-1 max-h-48 overflow-y-auto rounded-xl border border-marica-ink/10 bg-white shadow-lg">
+                          {(name === "shippingCity" ? cityLoading : districtLoading) && <p className="px-4 py-3 text-xs font-normal text-marica-ink-soft">Mencari {name === "shippingCity" ? "kota" : "kecamatan"}...</p>}
+                          {!cityLoading && !districtLoading && (name === "shippingCity" ? cityResults : districtResults).length === 0 && <p className="px-4 py-3 text-xs font-normal text-marica-ink-soft">Tidak ditemukan.</p>}
+                          {!cityLoading && !districtLoading && (name === "shippingCity" ? cityResults : districtResults).map((destination) => (
+                            <button
+                              key={String(destination.id)}
+                              type="button"
+                              onClick={() => {
+                                const value = destination.city;
+                                if (name === "shippingCity") {
+                                  setSelectedCity(destination);
+                                  setCityQuery(value);
+                                  setCityResults([]);
+                                } else {
+                                  setSelectedDistrict(destination);
+                                  setDistrictQuery(value);
+                                  setDistrictResults([]);
+                                }
+                                setForm((current) => ({
+                                  ...current,
+                                  [name]: value,
+                                  ...(name === "shippingCity" ? {
+                                    shippingCity: value,
+                                    shippingProvince: destination.province,
+                                  } : {
+                                    shippingDistrict: value,
+                                    shippingPostalCode: destination.postalCode || current.shippingPostalCode,
+                                  }),
+                                }));
+                              }}
+                              className="block w-full px-4 py-3 text-left text-xs font-normal text-marica-ink hover:bg-marica-cream"
+                            >
+                              <span className="font-semibold">{destination.city}</span>
+                              {name === "shippingCity" && destination.regency
+                                ? <span className="ml-1 text-marica-ink-soft">({destination.regency}, {destination.province})</span>
+                                : name === "shippingCity" && destination.province && <span className="ml-1 text-marica-ink-soft">({destination.province})</span>}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <input required value={form[name]} inputMode={name === "shippingPhone" || name === "shippingPostalCode" ? "numeric" : undefined} pattern={name === "shippingPhone" ? "[0-9]{8,15}" : name === "shippingPostalCode" ? "[0-9]{5}" : undefined} maxLength={name === "shippingPhone" ? 15 : name === "shippingPostalCode" ? 5 : undefined} onChange={(event) => setForm((current) => ({ ...current, [name]: name === "shippingPhone" || name === "shippingPostalCode" ? event.target.value.replace(/\D/g, "") : event.target.value }))} placeholder={placeholder} className="mt-2 w-full rounded-xl border border-marica-ink/15 bg-white px-4 py-3 text-sm font-normal outline-none transition focus:border-marica-amber-dark focus:ring-2 focus:ring-marica-amber/20" />
+                  )}
                 </label>
               ))}
               <label className="text-sm font-semibold sm:col-span-2">

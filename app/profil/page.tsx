@@ -422,7 +422,9 @@ export default function ProfilePage() {
                         <input
                           type="tel"
                           value={editWhatsapp}
-                          onChange={(e) => setEditWhatsapp(e.target.value)}
+                          inputMode="numeric"
+                          pattern="[0-9]{8,15}"
+                          onChange={(e) => setEditWhatsapp(e.target.value.replace(/\D/g, "").slice(0, 15))}
                           placeholder="08123456789"
                           className="mt-1 w-full rounded-lg border border-marica-ink/15 bg-[#fffdfa] px-3 py-2 font-body text-sm text-marica-ink outline-none focus:border-marica-amber-dark"
                         />

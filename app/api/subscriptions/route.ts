@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { snap } from "@/lib/midtrans";
 import { addSubscriptionPeriod, subscriptionNumber } from "@/lib/subscription";
-import { validateText } from "@/lib/request-validation";
+import { validateText, validatePhone, validatePostalCode, validateAddress } from "@/lib/request-validation";
 
 type CreateBody = { planId?: string; childProfileId?: string; shippingName?: string; shippingPhone?: string; shippingAddress?: string; shippingCity?: string; shippingProvince?: string; shippingPostalCode?: string };
 
@@ -24,11 +24,11 @@ export async function POST(request: Request) {
       planId: validateText(body.planId, "Paket subscription", 100),
       childProfileId: body.childProfileId === undefined ? { value: null } : validateText(body.childProfileId, "Profil anak", 100),
       shippingName: validateText(body.shippingName, "Nama penerima", 120),
-      shippingPhone: validateText(body.shippingPhone, "Nomor WhatsApp", 40),
-      shippingAddress: validateText(body.shippingAddress, "Alamat", 500),
+      shippingPhone: validatePhone(body.shippingPhone, "Nomor WhatsApp"),
+      shippingAddress: validateAddress(body.shippingAddress, "Alamat"),
       shippingCity: validateText(body.shippingCity, "Kota", 100),
       shippingProvince: validateText(body.shippingProvince, "Provinsi", 100),
-      shippingPostalCode: validateText(body.shippingPostalCode, "Kode pos", 20),
+      shippingPostalCode: validatePostalCode(body.shippingPostalCode, "Kode pos"),
     };
     const requiredFields = [fields.planId, fields.shippingName, fields.shippingPhone, fields.shippingAddress, fields.shippingCity, fields.shippingProvince, fields.shippingPostalCode];
     if (requiredFields.some((field) => field.error || typeof field.value !== "string") || ("error" in fields.childProfileId && fields.childProfileId.error)) return NextResponse.json({ error: "Data subscription belum lengkap atau tidak valid" }, { status: 400 });

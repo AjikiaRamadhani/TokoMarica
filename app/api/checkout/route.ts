@@ -8,6 +8,9 @@ import {
   validateOptionalText,
   validateText,
   validateInteger,
+  validatePhone,
+  validatePostalCode,
+  validateAddress,
 } from "@/lib/request-validation";
 
 function generateOrderNumber() {
@@ -53,11 +56,11 @@ export async function POST(request: Request) {
     };
 
     const shippingNameCheck = validateText(shippingName, "Nama pengirim", 120);
-    const shippingPhoneCheck = validateText(shippingPhone, "Nomor telepon", 30);
-    const shippingAddressCheck = validateText(shippingAddress, "Alamat pengiriman", 500);
+    const shippingPhoneCheck = validatePhone(shippingPhone, "Nomor telepon");
+    const shippingAddressCheck = validateAddress(shippingAddress, "Alamat pengiriman");
     const shippingCityCheck = validateText(shippingCity, "Kota", 120);
     const shippingProvinceCheck = validateText(shippingProvince, "Provinsi", 120);
-    const shippingPostalCodeCheck = validateText(shippingPostalCode, "Kode pos", 20);
+    const shippingPostalCodeCheck = validatePostalCode(shippingPostalCode, "Kode pos");
     const shippingCourierCheck = validateOptionalText(
       shippingCourier,
       "Kurir pengiriman",

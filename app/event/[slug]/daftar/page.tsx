@@ -46,6 +46,10 @@ export default function EventRegistrationPage() {
 
   const submit = async (formEvent: FormEvent) => {
     formEvent.preventDefault();
+    if (phone && !/^[0-9]{8,15}$/.test(phone)) {
+      setError("Nomor WhatsApp harus berupa angka 8-15 digit.");
+      return;
+    }
     setSubmitting(true);
     setError(null);
     try {
@@ -117,7 +121,10 @@ export default function EventRegistrationPage() {
                   min={1}
                   max={10}
                   value={quantity}
-                  onChange={(e) => updateQuantity(Number(e.target.value))}
+                  onChange={(e) => updateQuantity(Number(e.target.value.replace(/\D/g, "")))}
+                  onKeyDown={(e) => {
+                    if (["e", "E", "+", "-", "."].includes(e.key)) e.preventDefault();
+                  }}
                   className="mt-2 w-full rounded-xl border border-marica-ink/10 px-4 py-3 outline-none focus:border-marica-amber-dark"
                 />
               </label>
@@ -126,7 +133,9 @@ export default function EventRegistrationPage() {
                 <input
                   type="tel"
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  inputMode="numeric"
+                  pattern="[0-9]{8,15}"
+                  onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 15))}
                   className="mt-2 w-full rounded-xl border border-marica-ink/10 px-4 py-3 outline-none focus:border-marica-amber-dark"
                 />
               </label>

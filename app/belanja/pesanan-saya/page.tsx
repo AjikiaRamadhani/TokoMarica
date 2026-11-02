@@ -121,6 +121,13 @@ export default function PesananSayaPage() {
     return preorders.filter((item) => !q || item.reservationNumber.toLowerCase().includes(q) || item.campaign.title.toLowerCase().includes(q) || item.campaign.product.name.toLowerCase().includes(q));
   }, [preorders, searchInput]);
 
+  const orderStats = useMemo(() => ({
+    total: orders.length,
+    waiting: orders.filter((order) => order.status === "PENDING_PAYMENT").length,
+    active: orders.filter((order) => ["PROCESSING", "SHIPPED"].includes(order.status)).length,
+    completed: orders.filter((order) => order.status === "DELIVERED").length,
+  }), [orders]);
+
   const handleBayarSekarang = async (order: ApiOrder) => {
     setPayError(null);
     let paymentReference = order.midtransSnapToken ?? "";
@@ -173,7 +180,7 @@ export default function PesananSayaPage() {
       <Navbar />
 
       <main className="section-soft-bg flex-1">
-        <div className="mx-auto max-w-5xl px-5 py-8 sm:px-6 lg:px-10">
+        <div className="mx-auto max-w-6xl px-5 py-8 sm:px-6 lg:px-10">
           <Link
             href="/belanja"
             className="mb-5 inline-flex items-center gap-1.5 font-body text-sm font-medium text-marica-ink-soft transition hover:text-marica-ink"
@@ -182,12 +189,18 @@ export default function PesananSayaPage() {
             Kembali
           </Link>
 
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <h1 className="font-display text-2xl font-bold text-marica-ink sm:text-3xl">
-              Pesanan Saya
-            </h1>
-
-            <div className="relative sm:w-80">
+          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-marica-rose/40 via-marica-amber/20 to-marica-sky-light px-6 py-8 sm:px-10 sm:py-10">
+            <div className="relative z-[1] flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="font-body text-sm font-medium text-marica-ink-soft">Riwayat belanja</p>
+                <h1 className="mt-2 font-display text-3xl font-bold text-marica-ink sm:text-4xl">
+                  Pesanan Saya
+                </h1>
+                <p className="mt-2 max-w-lg font-body text-sm text-marica-ink-soft">
+                  Pantau pembayaran, proses pengiriman, dan riwayat pesanan Marica kamu.
+                </p>
+              </div>
+              <div className="relative sm:w-80">
               <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-marica-ink-soft/60" />
               <input
                 type="text"
@@ -196,11 +209,26 @@ export default function PesananSayaPage() {
                 placeholder="Cari pesanan atau nama produk"
                 className="w-full rounded-full border border-marica-ink/10 bg-white py-2.5 pl-10 pr-4 font-body text-sm text-marica-ink placeholder:text-marica-ink-soft/50 shadow-sm outline-none transition focus:border-marica-amber-dark/50"
               />
+              </div>
             </div>
           </div>
 
+          <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {[
+              ["Total Pesanan", orderStats.total],
+              ["Menunggu Bayar", orderStats.waiting],
+              ["Sedang Berjalan", orderStats.active],
+              ["Selesai", orderStats.completed],
+            ].map(([label, count]) => (
+              <div key={label} className="rounded-2xl border border-marica-ink/10 bg-white px-4 py-4 shadow-sm">
+                <p className="font-body text-xs text-marica-ink-soft">{label}</p>
+                <p className="mt-1 font-display text-2xl font-bold text-marica-ink">{count}</p>
+              </div>
+            ))}
+          </div>
+
           {/* Tabs */}
-          <div className="mt-6 flex gap-6 overflow-x-auto border-b border-marica-ink/10 pb-px">
+          <div className="mt-7 flex gap-2 overflow-x-auto pb-1">
             {TABS.map((tab) => {
               const active = activeTab === tab.key;
               return (
@@ -208,16 +236,13 @@ export default function PesananSayaPage() {
                   key={tab.key}
                   type="button"
                   onClick={() => setActiveTab(tab.key)}
-                  className={`relative shrink-0 whitespace-nowrap pb-3 font-body text-sm font-medium transition ${
+                  className={`relative shrink-0 whitespace-nowrap rounded-full border px-4 py-2 font-body text-sm font-medium transition ${
                     active
-                      ? "text-marica-amber-dark"
-                      : "text-marica-ink-soft hover:text-marica-ink"
+                      ? "border-marica-amber-dark bg-marica-amber-dark text-white shadow-sm"
+                      : "border-marica-ink/10 bg-white text-marica-ink-soft hover:border-marica-amber-dark/40 hover:text-marica-ink"
                   }`}
                 >
                   {tab.label}
-                  {active && (
-                    <span className="absolute inset-x-0 -bottom-px h-0.5 rounded-full bg-marica-amber-dark" />
-                  )}
                 </button>
               );
             })}

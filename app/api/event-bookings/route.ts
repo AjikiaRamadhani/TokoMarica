@@ -5,7 +5,7 @@ import { snap } from "@/lib/midtrans";
 import { sendEventTicketEmailIfNeeded } from "@/lib/event-ticket-mailer";
 import { expireStalePendingBookings } from "@/lib/event-booking";
 import { auditAction } from "@/lib/audit";
-import { validateText, validateInteger } from "@/lib/request-validation";
+import { validatePhone, validateInteger } from "@/lib/request-validation";
 
 const MAX_PARTICIPANTS_PER_BOOKING = 10;
 const PENDING_BOOKING_MINUTES = 30;
@@ -62,8 +62,10 @@ export async function POST(request: Request) {
       );
     }
 
-    const customerPhoneCheck = validateText(body.customerPhone ?? "", "Nomor telepon", 30);
-    if (body.customerPhone !== undefined && customerPhoneCheck.error) {
+    const customerPhoneCheck = body.customerPhone === undefined
+      ? null
+      : validatePhone(body.customerPhone, "Nomor telepon");
+    if (customerPhoneCheck?.error) {
       return NextResponse.json({ error: customerPhoneCheck.error }, { status: 400 });
     }
 
