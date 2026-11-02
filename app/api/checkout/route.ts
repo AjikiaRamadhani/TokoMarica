@@ -454,6 +454,8 @@ export async function POST(request: Request) {
       : undefined;
     const errorCode = providerResponse?.status_code
       ? `PAYMENT_PROVIDER_${providerResponse.status_code}`
+      : typeof error === "object" && error !== null && "code" in error && typeof error.code === "string"
+        ? `PRISMA_${error.code}`
       : error instanceof Error && error.message === "MIDTRANS_ITEM_TOTAL_MISMATCH"
         ? "MIDTRANS_ITEM_TOTAL_MISMATCH"
         : error instanceof Error && error.message.includes("Invalid server key")
