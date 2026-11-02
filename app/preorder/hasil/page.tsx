@@ -1,5 +1,7 @@
-"use client";
+import { Suspense } from "react";
+import PreorderResultClient from "./PreorderResultClient";
 
+<<<<<<< HEAD
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -88,3 +90,9 @@ function Row({ label, value }: { label: string; value: string }) { return <div c
 export default function PreorderResultPage() {
   return <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-[#fdf8f1] text-marica-ink"><Loader2 className="h-8 w-8 animate-spin text-marica-amber-dark" /></div>}><PreorderResultContent /></Suspense>;
 }
+=======
+export default async function PreorderResultPage({ searchParams }: { searchParams: Promise<{ reservation?: string }> }) {
+  const params = await searchParams;
+  return <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-[#fdf8f1]" />}><PreorderResultClient reservationNumber={params.reservation ?? null} /></Suspense>;
+}
+>>>>>>> develop

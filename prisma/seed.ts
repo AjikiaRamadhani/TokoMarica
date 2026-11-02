@@ -406,15 +406,25 @@ async function main() {
   await prisma.productBundle.deleteMany();
   await prisma.cartItem.deleteMany();
   
+  const toyCategory = await prisma.productCategory.upsert({
+    where: { slug: 'mainan-edukasi' },
+    update: { name: 'Mainan Edukasi', isActive: true },
+    create: { name: 'Mainan Edukasi', slug: 'mainan-edukasi', colorTag: 'blue', isActive: true }
+  });
+  const bookCategory = await prisma.productCategory.upsert({
+    where: { slug: 'buku-cerita-3' },
+    update: { name: 'Buku Cerita', isActive: true },
+    create: { name: 'Buku Cerita', slug: 'buku-cerita-3', colorTag: 'purple', isActive: true }
+  });
   const cat1 = await prisma.productCategory.upsert({
     where: { slug: 'board-games' },
-    update: { name: 'Board Games', colorTag: 'blue', isActive: true },
-    create: { name: 'Board Games', slug: 'board-games', colorTag: 'blue' }
+    update: { name: 'Board Games', colorTag: 'blue', isActive: true, parentId: toyCategory.id },
+    create: { name: 'Board Games', slug: 'board-games', colorTag: 'blue', parentId: toyCategory.id }
   });
   const cat2 = await prisma.productCategory.upsert({
     where: { slug: 'edu-kit' },
-    update: { name: 'Edu Kit', colorTag: 'orange', isActive: true },
-    create: { name: 'Edu Kit', slug: 'edu-kit', colorTag: 'orange' }
+    update: { name: 'Edu Kit', colorTag: 'orange', isActive: true, parentId: toyCategory.id },
+    create: { name: 'Edu Kit', slug: 'edu-kit', colorTag: 'orange', parentId: toyCategory.id }
   });
 
   const smartBoard = await prisma.product.upsert({
@@ -460,12 +470,12 @@ async function main() {
   await prisma.productImage.upsert({ where: { id: 'seed-image-puzzle' }, update: { url: '/images/product2.png', productId: puzzle.id }, create: { id: 'seed-image-puzzle', url: '/images/product2.png', productId: puzzle.id } });
   await prisma.productImage.upsert({ where: { id: 'seed-image-sensory-kit' }, update: { url: '/images/product3.png', productId: sensoryKit.id }, create: { id: 'seed-image-sensory-kit', url: '/images/product3.png', productId: sensoryKit.id } });
 
-  const documentProductCategories = [
+  const documentProductCategories: { name: string; slug: string; colorTag: string; order: number; parentId?: string }[] = [
     { name: 'WORKSHEET', slug: 'worksheet', colorTag: 'green', order: 1 },
     { name: 'ENSIKLOPEDIA', slug: 'ensiklopedia', colorTag: 'blue', order: 2 },
     { name: 'Buku Rasa Majalah', slug: 'buku-rasa-majalah', colorTag: 'orange', order: 3 },
-    { name: 'Cerita Bergambar Marica', slug: 'cerita-bergambar-marica', colorTag: 'purple', order: 4 },
-  ] as const;
+    { name: 'Cerita Bergambar Marica', slug: 'cerita-bergambar-marica', colorTag: 'purple', order: 4, parentId: bookCategory.id },
+  ];
 
   const categoriesBySlug = new Map<string, string>();
   for (const category of documentProductCategories) {
@@ -475,6 +485,7 @@ async function main() {
         name: category.name,
         colorTag: category.colorTag,
         order: category.order,
+        ...(category.parentId ? { parentId: category.parentId } : {}),
         isActive: true,
       },
       create: {
@@ -482,6 +493,7 @@ async function main() {
         slug: category.slug,
         colorTag: category.colorTag,
         order: category.order,
+        ...(category.parentId ? { parentId: category.parentId } : {}),
         isActive: true,
       },
     });

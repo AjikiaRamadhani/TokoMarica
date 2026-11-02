@@ -1,5 +1,7 @@
-"use client";
+import { Suspense } from "react";
+import PaymentSuccessClient from "./PaymentSuccessClient";
 
+<<<<<<< HEAD
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -33,3 +35,9 @@ function Row({ label, value }: { label: string; value: string }) { return <div c
 export default function PaymentSuccessPage() {
   return <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-[#fdf8f1] text-marica-ink"><Loader2 className="h-8 w-8 animate-spin text-marica-amber-dark" /></div>}><PaymentSuccessContent /></Suspense>;
 }
+=======
+export default async function PaymentSuccessPage({ searchParams }: { searchParams: Promise<{ order?: string }> }) {
+  const params = await searchParams;
+  return <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-[#fdf8f1]" />}><PaymentSuccessClient orderId={params.order ?? null} /></Suspense>;
+}
+>>>>>>> develop

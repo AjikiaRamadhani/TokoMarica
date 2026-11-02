@@ -1,0 +1,17 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import Navbar from "@/app/components/Navbar";
+import Footer from "@/app/components/Footer";
+import { Loader2, Sparkles } from "lucide-react";
+
+type Reservation = { reservationNumber: string; quantity: number; totalPrice: number; status: string; campaign: { title: string; product: { name: string } } };
+const labels: Record<string, string> = { PENDING_PAYMENT: "Menunggu pembayaran", PAID: "Berhasil", CANCELLED: "Dibatalkan", EXPIRED: "Kedaluwarsa" };
+const money = (value: number) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(value);
+
+export default function MyPreordersPage() {
+  const [items, setItems] = useState<Reservation[]>([]); const [loading, setLoading] = useState(true); const [error, setError] = useState("");
+  useEffect(() => { fetch("/api/preorders/mine", { cache: "no-store" }).then(async (response) => { const data = await response.json(); if (response.status === 401) { window.location.href = "/login?callbackUrl=/profil/preorder"; return; } if (!response.ok) throw new Error(data.error); setItems(Array.isArray(data) ? data : []); }).catch((loadError) => setError(loadError instanceof Error ? loadError.message : "Pre-order gagal dimuat")).finally(() => setLoading(false)); }, []);
+  return <div className="flex min-h-screen flex-col bg-marica-sky-light/20 font-body text-marica-ink"><Navbar /><main className="mx-auto w-full max-w-5xl flex-1 px-6 py-10"><div className="flex flex-wrap items-end justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-[0.18em] text-marica-amber-dark">Aktivitas akun</p><h1 className="mt-2 font-display text-3xl font-bold">Pre-order Saya</h1><p className="mt-2 text-sm text-marica-ink-soft">Cek status pembayaran dan pembelian rilis eksklusif kamu.</p></div><Link href="/preorder" className="rounded-full bg-marica-amber-dark px-4 py-2 text-sm font-bold text-white"><Sparkles className="mr-2 inline h-4 w-4" />Rilis eksklusif</Link></div>{loading ? <div className="flex justify-center py-20"><Loader2 className="h-7 w-7 animate-spin text-marica-amber-dark" /></div> : error ? <p className="mt-8 rounded-xl bg-red-50 p-4 text-sm text-red-700">{error}</p> : items.length === 0 ? <p className="mt-8 rounded-2xl bg-white p-10 text-center text-sm text-marica-ink-soft">Belum ada pre-order.</p> : <div className="mt-8 space-y-4">{items.map((item) => <article key={item.reservationNumber} className="rounded-2xl bg-white p-5 shadow-sm"><div className="flex flex-col justify-between gap-4 sm:flex-row"><div><p className="text-xs font-semibold uppercase tracking-wide text-marica-amber-dark">{item.reservationNumber}</p><h2 className="mt-1 font-display text-xl font-bold">{item.campaign.title}</h2><p className="mt-1 text-sm text-marica-ink-soft">{item.campaign.product.name} · {item.quantity} unit</p></div><span className="h-fit rounded-full bg-marica-amber/20 px-3 py-1 text-xs font-bold text-marica-amber-dark">{labels[item.status] ?? item.status}</span></div><div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-black/5 pt-4 text-sm"><span className="text-marica-ink-soft">{money(item.totalPrice)}</span><Link href={`/preorder/hasil?reservation=${encodeURIComponent(item.reservationNumber)}`} className="rounded-full bg-marica-ink px-4 py-2 font-semibold text-white">Cek pembayaran</Link></div></article>)}</div>}</main><Footer /></div>;
+}

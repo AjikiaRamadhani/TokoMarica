@@ -30,9 +30,29 @@ export async function GET(request: Request) {
     if (minPrice) priceFilter.gte = Number(minPrice);
     if (maxPrice) priceFilter.lte = Number(maxPrice);
 
+    let categoryFilter: { categoryId?: { in: string[] } } = {};
+    if (categorySlug) {
+      const categories = await prisma.productCategory.findMany({
+        select: { id: true, slug: true, parentId: true },
+      });
+      const selected = categories.find((category) => category.slug === categorySlug);
+      if (selected) {
+        const categoryIds = new Set([selected.id]);
+        let parentIds = [selected.id];
+        while (parentIds.length > 0) {
+          const children = categories.filter((category) => category.parentId && parentIds.includes(category.parentId));
+          for (const child of children) categoryIds.add(child.id);
+          parentIds = children.map((child) => child.id);
+        }
+        categoryFilter = { categoryId: { in: [...categoryIds] } };
+      } else {
+        categoryFilter = { categoryId: { in: [] } };
+      }
+    }
+
     const where = {
       isActive: true,
-      ...(categorySlug ? { category: { slug: categorySlug } } : {}),
+      ...categoryFilter,
       ...(skillFocus ? { skillFocus: { has: skillFocus } } : {}),
       ...(Object.keys(priceFilter).length > 0 ? { price: priceFilter } : {}),
       ...(search

@@ -25,9 +25,12 @@ import {
   MONTH_LABELS_ID,
   formatLongDateID,
   isEventExpired,
+  todayInJakarta,
   type EventCategory,
   type EventItem,
 } from "./events-data";
+
+export const dynamic = "force-dynamic";
 
 type CategoryFilter = "semua" | EventCategory;
 type ViewMode = "kalender" | "daftar";
@@ -72,7 +75,7 @@ function isSameDay(a: Date, b: Date) {
 }
 
 export default function EventCalendarPage() {
-  const today = useMemo(() => new Date(), []);
+  const today = useMemo(() => todayInJakarta(), []);
   const [events, setEvents] = useState<EventItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);

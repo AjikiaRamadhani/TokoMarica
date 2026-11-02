@@ -25,6 +25,10 @@ export type ArticleFormInitialData = {
   excerpt: string | null;
   content: string;
   coverImageUrl: string | null;
+  videoUrl: string | null;
+  videoProvider: string | null;
+  videoDurationSeconds: number | null;
+  isVideoFeatured: boolean;
   categoryId: string | null;
   status: "DRAFT" | "PUBLISHED";
   publishedAt: string | null;
@@ -47,6 +51,10 @@ export default function ArticleForm({ initialData }: { initialData?: ArticleForm
   const [publishedAt, setPublishedAt] = useState(toDateInputValue(initialData?.publishedAt ?? null));
   const [excerpt, setExcerpt] = useState(initialData?.excerpt ?? "");
   const [coverImageUrl, setCoverImageUrl] = useState(initialData?.coverImageUrl ?? "");
+  const [videoUrl, setVideoUrl] = useState(initialData?.videoUrl ?? "");
+  const [videoProvider, setVideoProvider] = useState(initialData?.videoProvider ?? "");
+  const [videoDurationSeconds, setVideoDurationSeconds] = useState(initialData?.videoDurationSeconds == null ? "" : String(initialData.videoDurationSeconds));
+  const [isVideoFeatured, setIsVideoFeatured] = useState(initialData?.isVideoFeatured ?? false);
   const [productSearch, setProductSearch] = useState("");
   const [products, setProducts] = useState<ApiProduct[]>(
     initialData?.productPlacements?.map((placement) => placement.product) ?? [],
@@ -170,6 +178,10 @@ export default function ArticleForm({ initialData }: { initialData?: ArticleForm
     excerpt: excerpt.trim() || null,
     content: contentRef.current?.innerHTML ?? "",
     coverImageUrl: coverImageUrl || null,
+    videoUrl: videoUrl.trim() || null,
+    videoProvider: videoProvider.trim() || null,
+    videoDurationSeconds: videoDurationSeconds ? Number(videoDurationSeconds) : null,
+    isVideoFeatured,
     categoryId: categoryId || null,
     status,
     publishedAt: publishedAt ? new Date(publishedAt).toISOString() : null,
@@ -321,6 +333,33 @@ export default function ArticleForm({ initialData }: { initialData?: ArticleForm
               />
             </div>
           </div>
+
+          <section className="rounded-2xl border border-marica-amber/30 bg-marica-amber/5 p-4">
+            <div>
+              <h2 className="font-body text-sm font-semibold text-marica-ink">Video Showcase</h2>
+              <p className="mt-1 font-body text-xs text-marica-ink-soft">Isi bagian ini jika artikel ingin ditampilkan di halaman Video Showcase.</p>
+            </div>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <div className="sm:col-span-2">
+                <label htmlFor="videoUrl" className="mb-1.5 block font-body text-sm font-medium text-marica-ink">URL Video</label>
+                <input id="videoUrl" type="url" value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} placeholder="https://www.youtube.com/watch?v=..." className="w-full rounded-xl border border-black/10 bg-white px-4 py-2.5 font-body text-[15px] text-marica-ink outline-none transition placeholder:text-marica-ink-soft/50 focus:border-marica-amber focus:ring-4 focus:ring-marica-amber/15" />
+              </div>
+              <div>
+                <label htmlFor="videoProvider" className="mb-1.5 block font-body text-sm font-medium text-marica-ink">Provider</label>
+                <select id="videoProvider" value={videoProvider} onChange={(e) => setVideoProvider(e.target.value)} className="w-full rounded-xl border border-black/10 bg-white px-4 py-2.5 font-body text-[15px] text-marica-ink outline-none focus:border-marica-amber focus:ring-4 focus:ring-marica-amber/15">
+                  <option value="">Pilih provider</option>
+                  <option value="YouTube">YouTube</option>
+                  <option value="Vimeo">Vimeo</option>
+                  <option value="Lainnya">Lainnya</option>
+                </select>
+              </div>
+              <div>
+                <label htmlFor="videoDurationSeconds" className="mb-1.5 block font-body text-sm font-medium text-marica-ink">Durasi (detik)</label>
+                <input id="videoDurationSeconds" type="number" min="0" value={videoDurationSeconds} onChange={(e) => setVideoDurationSeconds(e.target.value)} placeholder="Contoh: 180" className="w-full rounded-xl border border-black/10 bg-white px-4 py-2.5 font-body text-[15px] text-marica-ink outline-none focus:border-marica-amber focus:ring-4 focus:ring-marica-amber/15" />
+              </div>
+              <label className="flex items-center gap-2 text-sm text-marica-ink sm:col-span-2"><input type="checkbox" checked={isVideoFeatured} onChange={(e) => setIsVideoFeatured(e.target.checked)} className="h-4 w-4 accent-amber-700" /> Tampilkan sebagai video unggulan</label>
+            </div>
+          </section>
 
           <div>
             <label className="mb-1.5 block font-body text-sm font-medium text-marica-ink">Cover Image</label>
