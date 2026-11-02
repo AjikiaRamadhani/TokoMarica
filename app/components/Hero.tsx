@@ -3,12 +3,12 @@ import { landingHero, landingStatistics } from "@/lib/landing-content";
 
 const hero = {
   id: "static-hero",
-  headline: "Ciptakan Momen Belajar Ceria dan Bermakna Bersama Si Kecil Setiap Hari",
+  headline: "Temukan Buku dan Produk Seru untuk Si Kecil",
   subheadline:
-    "Bingung mencari aktivitas bermanfaat untuk anak? Dari keseruan area bermain fisik, workshop akhir pekan, hingga paket edukasi rutin di rumah, Marica siap mendampingi tiap tahapan tumbuh kembang anak Anda.",
+    "Belanja buku anak, mainan edukatif, Edu-Kit, printable, dan berbagai produk pilihan Marica untuk menemani bermain dan belajar di rumah.",
   imageUrl: "/images/hero-character.webp",
-  ctaText: "Eksplor Serunya Marica",
-  ctaLink: "#program",
+  ctaText: "Belanja Sekarang",
+  ctaLink: "/belanja",
   badges: [],
 };
 

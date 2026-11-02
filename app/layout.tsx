@@ -18,17 +18,20 @@ export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
 
   title: {
-    default: "Marica - Platform Edukasi Calistung untuk Anak Indonesia",
+    default: "Toko Marica - Buku, Mainan, dan Produk Edukatif Anak",
     template: "%s | Marica",
   },
 
   description:
-    "Marica menghadirkan pengalaman belajar keluarga berbasis phygital - area bermain edukatif, workshop akhir pekan, dan Edu-Kit bulanan untuk anak usia 2-12 tahun.",
+    "Toko Marica menyediakan buku anak, mainan edukatif, Edu-Kit, printable, dan produk pilihan untuk menemani tumbuh kembang anak.",
 
   keywords: [
     "Marica",
-    "edukasi anak",
-    "calistung",
+    "toko mainan edukatif",
+    "buku anak",
+    "buku edukatif anak",
+    "produk edukatif anak",
+    "mainan anak",
     "belajar sambil bermain",
     "playpass anak",
     "edu-kit",
@@ -48,10 +51,10 @@ export const metadata: Metadata = {
     url: siteUrl,
     siteName: "Marica",
 
-    title: "Marica - Platform Edukasi Calistung untuk Anak Indonesia",
+    title: "Toko Marica - Buku, Mainan, dan Produk Edukatif Anak",
 
     description:
-      "Ciptakan momen belajar ceria dan bermakna bersama si kecil setiap hari, bersama Marica.",
+      "Belanja buku anak, mainan edukatif, Edu-Kit, printable, dan produk pilihan Marica.",
 
     images: [
       {
@@ -66,10 +69,10 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
 
-    title: "Marica - Platform Edukasi Calistung untuk Anak Indonesia",
+    title: "Toko Marica - Buku, Mainan, dan Produk Edukatif Anak",
 
     description:
-      "Ciptakan momen belajar ceria dan bermakna bersama si kecil setiap hari, bersama Marica.",
+      "Belanja buku anak, mainan edukatif, Edu-Kit, printable, dan produk pilihan Marica.",
 
     images: ["/images/og-image.png"],
   },
