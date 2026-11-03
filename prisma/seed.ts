@@ -26,6 +26,7 @@ async function main() {
       description:
         "Marica Experience Store menghadirkan pengalaman belajar keluarga berbasis phygital.",
       phone: "+62 858 7045 9329",
+      whatsapp: "6285870459329",
       email: "pt.sebangku@gmail.com",
       instagram: "@kids.marica",
       tiktok: "@kids.marica",

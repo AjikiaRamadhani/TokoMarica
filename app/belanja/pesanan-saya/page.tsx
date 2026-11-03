@@ -8,7 +8,7 @@ import { Search, ArrowLeft, Store, PackageSearch, Loader2, Sparkles } from "luci
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import FeedbackPopup from "../../components/FeedbackPopup";
-import { payWithSnap } from "../../components/belanja/snap";
+import { buildCheckoutWhatsAppUrl } from "@/lib/whatsapp-checkout";
 import {
   ORDER_STATUS_LABEL,
   ORDER_STATUS_STYLE,
@@ -130,46 +130,18 @@ export default function PesananSayaPage() {
 
   const handleBayarSekarang = async (order: ApiOrder) => {
     setPayError(null);
-    let paymentReference = order.midtransSnapToken ?? "";
     setPayingOrderId(order.id);
-    const hasLegacyWhatsAppFallback = paymentReference.startsWith("https://wa.me/");
-    if (!paymentReference || hasLegacyWhatsAppFallback) {
-      try {
-        const response = await fetch(`/api/orders/${order.id}`, { method: "POST" });
-        const refreshed = await response.json();
-        if (!response.ok || !refreshed.midtransSnapToken) throw new Error(refreshed.error ?? "Referensi pembayaran belum tersedia");
-        paymentReference = refreshed.midtransSnapToken as string;
-      } catch (err) {
-        setPayError(err instanceof Error ? err.message : "Gagal menyiapkan pembayaran");
-        setPayingOrderId(null);
-        return;
-      }
-    }
-    if (paymentReference.startsWith("http")) {
-      window.location.href = paymentReference;
-      return;
-    }
     try {
-      await payWithSnap(paymentReference, {
-        onSuccess: () => {
-          router.push(`/belanja/pembayaran/berhasil?order=${encodeURIComponent(order.id)}`);
-          void fetch(`/api/orders/${order.id}`, { method: "POST" })
-            .catch(() => undefined)
-            .finally(() => loadOrders());
-        },
-        onPending: () => loadOrders(),
-        onError: () =>
-          setPayError("Pembayaran gagal diproses. Silakan coba lagi."),
-        onClose: () => {
-          void fetch(`/api/orders/${order.id}`, { method: "POST" })
-            .catch(() => undefined)
-            .finally(() => loadOrders());
-        },
-      });
+      const response = await fetch("/api/company", { cache: "no-store" });
+      const company = await response.json();
+      if (!response.ok || !company.whatsapp) {
+        throw new Error("Nomor WhatsApp checkout belum dikonfigurasi");
+      }
+      const whatsappUrl = buildCheckoutWhatsAppUrl(company.whatsapp, order);
+      if (!whatsappUrl) throw new Error("Nomor WhatsApp checkout tidak valid");
+      window.location.href = whatsappUrl;
     } catch (err) {
-      setPayError(
-        err instanceof Error ? err.message : "Gagal membuka halaman pembayaran",
-      );
+      setPayError(err instanceof Error ? err.message : "Gagal membuka WhatsApp");
     } finally {
       setPayingOrderId(null);
     }

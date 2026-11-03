@@ -211,7 +211,7 @@ function BelanjaPageContent() {
   }, [buildQuery]);
 
   // Refresh stok ketika user kembali ke tab Belanja setelah menyelesaikan
-  // pembayaran di halaman lain atau tab Midtrans.
+  // pembayaran dilakukan setelah pesanan dibuat melalui WhatsApp.
   useEffect(() => {
     const refreshStock = () => {
       if (document.visibilityState !== "visible") return;

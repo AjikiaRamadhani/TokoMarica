@@ -151,6 +151,7 @@ model CompanyProfile {
   description String?
   address     String?
   phone       String?
+  whatsapp    String?
   email       String?
   instagram   String?
   facebook    String?
