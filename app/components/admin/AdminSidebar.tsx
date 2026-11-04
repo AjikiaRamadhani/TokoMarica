@@ -468,6 +468,22 @@ function SidebarContent({
                       </span>
                     </Link>
                     <Link
+                      href="/kasir/pembelian"
+                      onClick={onNavigate}
+                      className="relative"
+                    >
+                      {pathname === "/kasir/pembelian" && (
+                        <motion.span
+                          layoutId="admin-nav-active"
+                          className="absolute inset-0 rounded-xl bg-marica-amber-dark"
+                        />
+                      )}
+                      <span className={`relative flex items-center gap-3 rounded-xl px-3.5 py-2.5 font-body text-sm font-medium ${pathname === "/kasir/pembelian" ? "text-white" : "text-marica-ink-soft hover:bg-marica-sky-light/60 hover:text-marica-ink"}`}>
+                        <ShoppingBag className="h-4.5 w-4.5" />
+                        Riwayat pembelian
+                      </span>
+                    </Link>
+                    <Link
                       href="/kasir/keuangan"
                       onClick={onNavigate}
                       className="relative"
@@ -632,9 +648,14 @@ export default function AdminSidebar({
                 <ShoppingBag className="h-5 w-5" />
               </Link>
               {role === "KASIR" && (
-                <Link href="/kasir/riwayat" aria-label="Riwayat penjaga" className={`mt-2 rounded-xl p-2 ${pathname === "/kasir/riwayat" ? "bg-marica-amber-dark text-white" : "text-marica-ink-soft hover:bg-marica-sky-light/60"}`}>
-                  <History className="h-5 w-5" />
-                </Link>
+                <>
+                  <Link href="/kasir/riwayat" aria-label="Riwayat penjaga" className={`mt-2 rounded-xl p-2 ${pathname === "/kasir/riwayat" ? "bg-marica-amber-dark text-white" : "text-marica-ink-soft hover:bg-marica-sky-light/60"}`}>
+                    <History className="h-5 w-5" />
+                  </Link>
+                  <Link href="/kasir/pembelian" aria-label="Riwayat pembelian" className={`mt-2 rounded-xl p-2 ${pathname === "/kasir/pembelian" ? "bg-marica-amber-dark text-white" : "text-marica-ink-soft hover:bg-marica-sky-light/60"}`}>
+                    <ShoppingBag className="h-5 w-5" />
+                  </Link>
+                </>
               )}
               {role === "KASIR" && (
                 <Link href="/kasir/keuangan" aria-label="Keuangan" className={`mt-2 rounded-xl p-2 ${pathname === "/kasir/keuangan" ? "bg-marica-amber-dark text-white" : "text-marica-ink-soft hover:bg-marica-sky-light/60"}`}>

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/require-admin";
+import { requireRole } from "@/lib/access-control";
 import crypto from "crypto";
 import { settlePlaypassBooking } from "@/lib/playpass-booking";
 import { settleTableReservation } from "@/lib/table-reservation";
@@ -10,7 +10,7 @@ import { sendPlaypassTicketEmailIfNeeded } from "@/lib/playpass-ticket-mailer";
 import { sendTableReservationEmailIfNeeded } from "@/lib/table-reservation-mailer";
 
 export async function GET() {
-  const session = await requireAdmin();
+  const session = await requireRole("ADMIN", "KASIR");
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   try {
@@ -48,7 +48,7 @@ export async function GET() {
 }
 
 export async function PUT(request: Request) {
-  const session = await requireAdmin();
+  const session = await requireRole("ADMIN", "KASIR");
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   try {
