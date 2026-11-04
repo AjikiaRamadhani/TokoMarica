@@ -19,8 +19,8 @@ import {
 import Navbar from "@/app/components/Navbar";
 import Footer from "@/app/components/Footer";
 import {
-  CATEGORY_LABEL,
-  CATEGORY_STYLE,
+  categoryLabel,
+  categoryStyle,
   DAY_LABELS_ID,
   MONTH_LABELS_ID,
   formatLongDateID,
@@ -138,6 +138,11 @@ export default function EventCalendarPage() {
       return matchesCategory && matchesTime && matchesQuery;
     });
   }, [category, events, query, timeFilter]);
+
+  const availableCategories = useMemo(
+    () => [...new Set(events.map((event) => event.category))].sort((a, b) => categoryLabel(a).localeCompare(categoryLabel(b), "id")),
+    [events],
+  );
 
   const eventsThisMonth = useMemo(
     () =>
@@ -275,8 +280,7 @@ export default function EventCalendarPage() {
               <div className="flex flex-wrap items-center justify-center gap-2">
                 <span className="mr-1 text-xs font-bold uppercase tracking-wide text-marica-ink-soft">Kategori</span>
                 <FilterPill active={category === "semua"} onClick={() => setCategory("semua")}>Semua</FilterPill>
-                <FilterPill active={category === "workshop"} onClick={() => setCategory("workshop")}>Weekend Workshop</FilterPill>
-                <FilterPill active={category === "parenting"} onClick={() => setCategory("parenting")}>Sesi Parenting</FilterPill>
+                {availableCategories.map((value) => <FilterPill key={value} active={category === value} onClick={() => setCategory(value)}>{categoryLabel(value)}</FilterPill>)}
               </div>
             </div>
           </motion.div>
@@ -397,7 +401,7 @@ export default function EventCalendarPage() {
 
                                 <div className="mt-1 flex flex-col gap-1">
                                   {dayEvents.slice(0, 2).map((ev) => {
-                                    const style = CATEGORY_STYLE[ev.category];
+                                    const style = categoryStyle(ev.category);
                                     const expired = isEventExpired(ev.date);
                                     return (
                                       <Link
@@ -587,7 +591,7 @@ function ViewToggleButton({
 }
 
 function EventCard({ event, index }: { event: EventItem; index: number }) {
-  const style = CATEGORY_STYLE[event.category];
+  const style = categoryStyle(event.category);
   const expired = isEventExpired(event.date);
   return (
     <motion.div
@@ -610,7 +614,7 @@ function EventCard({ event, index }: { event: EventItem; index: number }) {
       <span
         className={`inline-block rounded-full px-3 py-1 font-body text-xs font-semibold ${style.bg} ${style.text} ${expired ? "mr-28" : ""}`}
       >
-        {CATEGORY_LABEL[event.category]}
+        {categoryLabel(event.category)}
       </span>
 
       <h4 className="mt-3 font-display text-base font-bold text-marica-ink">

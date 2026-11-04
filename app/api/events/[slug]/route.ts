@@ -50,7 +50,7 @@ export async function GET(
 
 function toEventItem({ bookings, ...event }: EventRecord) {
   const description = event.description;
-  const category = event.category.toLowerCase() === "parenting" ? "parenting" : "workshop";
+  const category = event.category.trim().toLowerCase().replace(/\s+/g, "-");
 
   return {
     slug: event.slug,

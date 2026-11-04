@@ -45,7 +45,7 @@ export async function GET() {
 
 function toEventItem({ bookings, ...event }: EventRecord) {
   const date = event.eventDate.toISOString().slice(0, 10);
-  const category = event.category.toLowerCase() === "parenting" ? "parenting" : "workshop";
+  const category = event.category.trim().toLowerCase().replace(/\s+/g, "-");
   const description = event.description;
 
   return {
