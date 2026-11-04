@@ -16,7 +16,7 @@ const defaultSteps = [
     iconBg: "bg-marica-amber/20",
     iconText: "text-marica-amber-text",
     labelText: "text-marica-amber-text",
-    image: "/images/how-it-works-step-1.png",
+    image: "/images/how-it-works-step-1.jpg",
     imageAlt: "Memilih aktivitas favorit",
   },
   {
@@ -30,7 +30,7 @@ const defaultSteps = [
     iconBg: "bg-[#e0507a]/15",
     iconText: "text-[#e0507a]",
     labelText: "text-[#e0507a]",
-    image: "/images/how-it-works-step-2.png",
+    image: "/images/how-it-works-step-2.jpg",
     imageAlt: "Datang langsung atau terima di rumah",
   },
   {
@@ -44,7 +44,7 @@ const defaultSteps = [
     iconBg: "bg-marica-blue/20",
     iconText: "text-[#1f5f83]",
     labelText: "text-[#1f5f83]",
-    image: "/images/how-it-works-step-3.png",
+    image: "/images/how-it-works-step-3.jpg",
     imageAlt: "Momen belajar ceria",
   },
 ];
@@ -202,7 +202,7 @@ export default function HowItWorksSection() {
           className="absolute left-[16.5%] right-[16.5%] top-[68px] hidden h-0.5 bg-marica-ink/15 lg:block"
         />
 
-        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3 lg:gap-8">
+        <div className="grid items-stretch gap-8 sm:grid-cols-2 lg:grid-cols-3 lg:gap-8">
           {steps.map((item, i) => {
             const Icon = item.icon;
             return (
@@ -213,7 +213,7 @@ export default function HowItWorksSection() {
                 viewport={{ once: true, amount: 0.3, margin: "0px 0px -60px 0px" }}
                 transition={{ duration: 0.6, delay: i * 0.15, ease: "easeOut" }}
                 whileHover={{ y: -6 }}
-                className={`relative flex flex-col items-center rounded-[28px] bg-white p-6 text-center shadow-[0_18px_40px_rgba(120,60,10,0.15)] transition-shadow hover:shadow-[0_24px_50px_rgba(120,60,10,0.22)] sm:p-7 ${
+                className={`relative flex h-full flex-col items-center rounded-[28px] bg-white p-6 text-center shadow-[0_18px_40px_rgba(120,60,10,0.15)] transition-shadow hover:shadow-[0_24px_50px_rgba(120,60,10,0.22)] sm:p-7 ${
                   i === 2 ? "sm:col-span-2 sm:mx-auto sm:w-[calc(50%-1rem)] lg:col-span-1 lg:mx-0 lg:w-auto" : ""
                 }`}
               >
@@ -272,14 +272,14 @@ export default function HowItWorksSection() {
                   viewport={{ once: true, amount: 0.3 }}
                   transition={{ duration: 0.5, delay: i * 0.15 + 0.3, ease: "easeOut" }}
                   whileHover={{ scale: 1.04 }}
-                  className="relative mt-5 w-full overflow-hidden rounded-2xl"
+                  className="relative mt-auto w-full overflow-hidden rounded-2xl pt-5"
                 >
                   <Image
                     src={item.image}
                     alt={item.imageAlt}
                     width={420}
                     height={260}
-                    className="h-40 w-full object-cover sm:h-44"
+                    className="aspect-[420/260] h-auto w-full object-cover"
                   />
                 </motion.div>
               </motion.div>

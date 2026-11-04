@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import { Plus, Search, Pencil, Trash2, ImageOff, Tags, Video } from "lucide-react";
 import DeleteArticleModal from "../../components/admin/DeleteArticleModal";
@@ -36,9 +37,7 @@ type ArticlesResponse = {
   };
 };
 
-const TABS = [
-  { label: "Semua", value: "" },
-  { label: "Video", value: "video" },
+const STATUS_TABS = [
   { label: "Published", value: "PUBLISHED" },
   { label: "Draft", value: "DRAFT" },
 ] as const;
@@ -55,8 +54,10 @@ function formatDate(iso: string | null) {
 }
 
 export default function AdminArtikelPage() {
-  const [activeTab, setActiveTab] =
-    useState<(typeof TABS)[number]["value"]>("");
+  const pathname = usePathname();
+  const isVideoPage = pathname === "/admin/video" || pathname.startsWith("/admin/video/");
+  const [activeStatus, setActiveStatus] =
+    useState<(typeof STATUS_TABS)[number]["value"] | "">("");
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [page, setPage] = useState(1);
@@ -85,11 +86,8 @@ export default function AdminArtikelPage() {
         page: String(page),
         limit: String(LIMIT),
       });
-      if (activeTab) params.set("status", activeTab);
-      if (activeTab === "video") {
-        params.delete("status");
-        params.set("media", "video");
-      }
+      params.set("media", isVideoPage ? "video" : "article");
+      if (activeStatus) params.set("status", activeStatus);
       if (debouncedQuery) params.set("search", debouncedQuery);
 
       const res = await fetch(`/api/admin/articles?${params.toString()}`, {
@@ -104,7 +102,7 @@ export default function AdminArtikelPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [activeTab, debouncedQuery, page]);
+  }, [activeStatus, debouncedQuery, isVideoPage, page]);
 
   useEffect(() => {
     fetchArticles();
@@ -148,10 +146,12 @@ export default function AdminArtikelPage() {
       >
         <div>
           <h1 className="font-display text-2xl font-semibold text-marica-ink">
-            Manajemen Artikel
+            {isVideoPage ? "Manajemen Video" : "Manajemen Artikel"}
           </h1>
           <p className="mt-1 font-body text-sm text-marica-ink-soft">
-            Kelola semua artikel blog Marica di sini.
+            {isVideoPage
+              ? "Kelola video showcase Marica di sini."
+              : "Kelola artikel blog Marica di sini."}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -163,11 +163,11 @@ export default function AdminArtikelPage() {
             Kategori
           </Link>
           <Link
-            href="/admin/artikel/baru"
+            href={isVideoPage ? "/admin/video/baru" : "/admin/artikel/baru"}
             className="inline-flex items-center justify-center gap-2 rounded-full bg-marica-amber-dark px-5 py-2.5 font-body text-sm font-semibold text-white shadow-sm transition hover:brightness-105 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-marica-amber/25"
           >
             <Plus className="h-4 w-4" />
-            Tambah Artikel
+            {isVideoPage ? "Tambah Video" : "Tambah Artikel"}
           </Link>
         </div>
       </motion.div>
@@ -180,27 +180,36 @@ export default function AdminArtikelPage() {
       >
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex gap-1 rounded-full bg-marica-sky-light/40 p-1">
-            {TABS.map((tab) => (
+            <Link
+              href="/admin/artikel"
+              className={`relative rounded-full px-4 py-1.5 font-body text-sm font-medium transition-colors ${
+                !isVideoPage ? "bg-marica-amber-dark text-white" : "text-marica-ink-soft hover:text-marica-ink"
+              }`}
+            >
+              Artikel
+            </Link>
+            <Link
+              href="/admin/video"
+              className={`relative rounded-full px-4 py-1.5 font-body text-sm font-medium transition-colors ${
+                isVideoPage ? "bg-marica-amber-dark text-white" : "text-marica-ink-soft hover:text-marica-ink"
+              }`}
+            >
+              Video
+            </Link>
+            {STATUS_TABS.map((tab) => (
               <button
                 key={tab.label}
                 type="button"
                 onClick={() => {
-                  setActiveTab(tab.value);
+                  setActiveStatus((current) => current === tab.value ? "" : tab.value);
                   setPage(1);
                 }}
                 className={`relative rounded-full px-4 py-1.5 font-body text-sm font-medium transition-colors ${
-                  activeTab === tab.value
-                    ? "text-white"
+                  activeStatus === tab.value
+                    ? "bg-marica-amber-dark text-white"
                     : "text-marica-ink-soft hover:text-marica-ink"
                 }`}
               >
-                {activeTab === tab.value && (
-                  <motion.span
-                    layoutId="admin-artikel-tab"
-                    transition={{ type: "spring", stiffness: 380, damping: 32 }}
-                    className="absolute inset-0 rounded-full bg-marica-amber-dark"
-                  />
-                )}
                 <span className="relative">{tab.label}</span>
               </button>
             ))}
@@ -212,7 +221,7 @@ export default function AdminArtikelPage() {
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Cari judul artikel..."
+              placeholder={isVideoPage ? "Cari judul video..." : "Cari judul artikel..."}
               className="w-full rounded-full border border-black/10 bg-marica-sky-light/30 py-2 pl-10 pr-4 font-body text-sm text-marica-ink outline-none transition focus:border-marica-amber focus:bg-white focus:ring-4 focus:ring-marica-amber/15"
             />
           </div>
@@ -222,7 +231,7 @@ export default function AdminArtikelPage() {
           <table className="w-full min-w-[640px] border-collapse">
             <thead>
               <tr className="border-b border-black/5 text-left font-body text-xs font-semibold uppercase tracking-wide text-marica-ink-soft/60">
-                <th className="py-3 pr-4">Artikel</th>
+                <th className="py-3 pr-4">{isVideoPage ? "Video" : "Artikel"}</th>
                 <th className="py-3 pr-4">Kategori</th>
                 <th className="py-3 pr-4">Status</th>
                 <th className="py-3 pr-4">Tanggal</th>
@@ -329,7 +338,7 @@ export default function AdminArtikelPage() {
                     <td className="py-3 pr-4">
                       <div className="flex items-center justify-end gap-1">
                         <Link
-                          href={`/admin/artikel/${article.id}`}
+                          href={`${isVideoPage ? "/admin/video" : "/admin/artikel"}/${article.id}`}
                           title="Edit"
                           className="flex h-9 w-9 items-center justify-center rounded-lg text-marica-ink-soft transition hover:bg-marica-sky-light/60 hover:text-marica-ink active:scale-[0.95] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-marica-amber/20"
                         >
