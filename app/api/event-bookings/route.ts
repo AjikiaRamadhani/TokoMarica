@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { snap } from "@/lib/midtrans";
 import { sendEventTicketEmailIfNeeded } from "@/lib/event-ticket-mailer";
 import { expireStalePendingBookings } from "@/lib/event-booking";
 import { auditAction } from "@/lib/audit";
 import { validatePhone, validateInteger } from "@/lib/request-validation";
+import { buildManualPaymentWhatsAppUrl } from "@/lib/whatsapp-checkout";
 
 const MAX_PARTICIPANTS_PER_BOOKING = 10;
 const PENDING_BOOKING_MINUTES = 30;
@@ -114,7 +114,6 @@ export async function POST(request: Request) {
           quantity,
           totalPrice,
           expiresAt: event.price > 0 ? expiresAt : null,
-          midtransOrderId: event.price > 0 ? bookingNumber : null,
           status: event.price > 0 ? "PENDING_PAYMENT" : "PAID",
           paidAt: event.price > 0 ? null : new Date(),
           tickets:
@@ -144,33 +143,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ booking: bookingResult.booking }, { status: 201 });
     }
 
-    const transaction = await snap.createTransaction({
-      transaction_details: {
-        order_id: bookingNumber,
-        gross_amount: totalPrice,
-      },
-      customer_details: {
-        first_name: bookingResult.booking.customerName,
-        email: bookingResult.booking.customerEmail,
-        phone: bookingResult.booking.customerPhone ?? undefined,
-      },
-      item_details: [
-        {
-          id: event.id,
-          price: event.price,
-          quantity,
-          name: event.title.slice(0, 50),
-        },
-      ],
-    });
-
-    const updatedBooking = await prisma.eventBooking.update({
-      where: { id: bookingResult.booking.id },
-      data: {
-        midtransSnapToken: transaction.token ?? transaction.redirect_url,
-      },
-      include: { tickets: true },
-    });
+    const company = await prisma.companyProfile.findFirst({ select: { whatsapp: true } });
+    const whatsappUrl = company?.whatsapp
+      ? buildManualPaymentWhatsAppUrl(company.whatsapp, { reference: bookingNumber, customerName: bookingResult.booking.customerName, total: totalPrice, description: `Event ${event.title}` })
+      : null;
+    if (!whatsappUrl) return NextResponse.json({ error: "Nomor WhatsApp pembayaran belum dikonfigurasi" }, { status: 503 });
 
     auditAction({
       action: "event_booking_created",
@@ -180,9 +157,9 @@ export async function POST(request: Request) {
 
     return NextResponse.json(
       {
-        booking: updatedBooking,
-        snapToken: transaction.token,
-        redirectUrl: transaction.redirect_url,
+        booking: bookingResult.booking,
+        whatsappUrl,
+        redirectUrl: whatsappUrl,
       },
       { status: 201 }
     );

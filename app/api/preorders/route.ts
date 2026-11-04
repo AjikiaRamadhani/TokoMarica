@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { snap } from "@/lib/midtrans";
 import { preorderIsOpen, preorderReservationNumber } from "@/lib/preorder";
 import { validateInteger, validatePhone } from "@/lib/request-validation";
+import { buildManualPaymentWhatsAppUrl } from "@/lib/whatsapp-checkout";
 
 export async function GET() {
   const now = new Date();
@@ -38,9 +38,12 @@ export async function POST(request: Request) {
       if (!updated.count) throw new Error("PREORDER_SOLD_OUT");
       return tx.preOrderReservation.create({ data: { reservationNumber: number, campaignId: campaign.id, userId, customerName: session.user.name ?? "Pelanggan Marica", customerEmail: userEmail, customerWhatsapp: whatsapp.value ?? null, quantity: quantity.value, totalPrice: campaign.price * quantity.value } });
     });
-    const transaction = await snap.createTransaction({ transaction_details: { order_id: number, gross_amount: reservation.totalPrice }, customer_details: { first_name: reservation.customerName, email: reservation.customerEmail, phone: reservation.customerWhatsapp ?? undefined }, item_details: [{ id: campaign.product.id, price: campaign.price, quantity: reservation.quantity, name: campaign.title.slice(0, 50) }] });
-    const updated = await prisma.preOrderReservation.update({ where: { id: reservation.id }, data: { midtransOrderId: number, midtransSnapToken: transaction.token ?? transaction.redirect_url } });
-    return NextResponse.json({ reservation: updated, snapToken: transaction.token, redirectUrl: transaction.redirect_url }, { status: 201 });
+    const company = await prisma.companyProfile.findFirst({ select: { whatsapp: true } });
+    const whatsappUrl = company?.whatsapp
+      ? buildManualPaymentWhatsAppUrl(company.whatsapp, { reference: number, customerName: reservation.customerName, total: reservation.totalPrice, description: `Pre-order ${campaign.title}` })
+      : null;
+    if (!whatsappUrl) return NextResponse.json({ error: "Nomor WhatsApp pembayaran belum dikonfigurasi" }, { status: 503 });
+    return NextResponse.json({ reservation, whatsappUrl, redirectUrl: whatsappUrl }, { status: 201 });
   } catch (error) {
     if (error instanceof Error && error.message === "PREORDER_SOLD_OUT") return NextResponse.json({ error: "Sisa kuota pre-order tidak mencukupi" }, { status: 409 });
     console.error("[POST /api/preorders]", error);

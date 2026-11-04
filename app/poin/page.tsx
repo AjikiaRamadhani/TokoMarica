@@ -81,7 +81,7 @@ export default function PointsPage() {
               Marica Points
             </h1>
             <p className="mt-2 font-body text-marica-ink-soft">
-              Kumpulkan poin dari transaksi, download printable, dan kunjungan
+              Kumpulkan poin dari transaksi dan kunjungan game
               game. Gunakan sebagai potongan belanja.
             </p>
           </div>

@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { snap } from "@/lib/midtrans";
 import { addSubscriptionPeriod, subscriptionNumber } from "@/lib/subscription";
 import { validateText, validatePhone, validatePostalCode, validateAddress } from "@/lib/request-validation";
+import { buildManualPaymentWhatsAppUrl } from "@/lib/whatsapp-checkout";
 
 type CreateBody = { planId?: string; childProfileId?: string; shippingName?: string; shippingPhone?: string; shippingAddress?: string; shippingCity?: string; shippingProvince?: string; shippingPostalCode?: string };
 
@@ -49,9 +49,12 @@ export async function POST(request: Request) {
       await tx.subscriptionDelivery.create({ data: { deliveryNumber, subscriptionId: createdSubscription.id, cycleId: createdCycle.id, scheduledAt: startDate, status: "SCHEDULED" } });
       return { subscription: createdSubscription, cycle: createdCycle };
     });
-    const transaction = await snap.createTransaction({ transaction_details: { order_id: cycleNumber, gross_amount: plan.price }, customer_details: { first_name: fields.shippingName.value as string, email, phone: fields.shippingPhone.value as string }, item_details: [{ id: plan.id, price: plan.price, quantity: 1, name: plan.name.slice(0, 50) }] });
-    const updatedCycle = await prisma.subscriptionCycle.update({ where: { id: cycle.id }, data: { midtransOrderId: cycleNumber, midtransSnapToken: transaction.token ?? transaction.redirect_url } });
-    return NextResponse.json({ subscription, cycle: updatedCycle, snapToken: transaction.token, redirectUrl: transaction.redirect_url }, { status: 201 });
+    const company = await prisma.companyProfile.findFirst({ select: { whatsapp: true } });
+    const whatsappUrl = company?.whatsapp
+      ? buildManualPaymentWhatsAppUrl(company.whatsapp, { reference: cycleNumber, customerName: fields.shippingName.value as string, total: plan.price, description: `Subscription ${plan.name}` })
+      : null;
+    if (!whatsappUrl) return NextResponse.json({ error: "Nomor WhatsApp pembayaran belum dikonfigurasi" }, { status: 503 });
+    return NextResponse.json({ subscription, cycle, whatsappUrl, redirectUrl: whatsappUrl }, { status: 201 });
   } catch (error) {
     console.error("[POST /api/subscriptions]", error);
     return NextResponse.json({ error: "Gagal membuat subscription" }, { status: 500 });

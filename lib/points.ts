@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 
-export const POINTS_PER_RUPIAH = 10_000;
+// Rp50.000 spending earns 1 Marica Point. Partial amounts are rounded down.
+export const POINTS_PER_RUPIAH = 50_000;
 export const RUPIAH_PER_POINT = 1;
 
 type PointsTransactionClient = Pick<typeof prisma, "pointAccount" | "pointTransaction">;

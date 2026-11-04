@@ -99,7 +99,7 @@ function PrintablesDownloadContent() {
               className="inline-flex w-fit items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold"
               style={{ backgroundColor: style.badgeBg, color: style.badgeText }}
             >
-              <Star className="h-3.5 w-3.5 fill-current" /> +{printable.points} MARICA POINTS
+              <Star className="h-3.5 w-3.5 fill-current" /> GRATIS UNTUK MEMBER
             </div>
 
             <h1 className="mt-3 font-display text-2xl font-semibold leading-tight text-marica-ink sm:mt-4 sm:text-3xl">{printable.title}</h1>
