@@ -8,7 +8,8 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # FTP sync .next dapat memerlukan waktu cukup lama di cPanel.
+    timeout-minutes: 30
 
     steps:
       - name: Checkout
@@ -68,4 +69,6 @@ jobs:
           local-dir: ./deploy/
           protocol: ftp
           port: 21
-          timeout: 120000
+          timeout: 300000
+          state-name: .ftp-deploy-sync-state.json
+          dangerous-clean-slate: false
