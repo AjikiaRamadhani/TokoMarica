@@ -1,26 +1,11 @@
 import { NextResponse } from "next/server";
-import crypto from "crypto";
-import { prisma } from "@/lib/prisma";
-import { sendEventTicketEmailIfNeeded } from "@/lib/event-ticket-mailer";
-import { sendPlaypassTicketEmailIfNeeded } from "@/lib/playpass-ticket-mailer";
-import { settlePlaypassBooking } from "@/lib/playpass-booking";
-import { sendTableReservationEmailIfNeeded } from "@/lib/table-reservation-mailer";
-import { settleTableReservation } from "@/lib/table-reservation";
-import { settleOrderPayment } from "@/lib/settle-order-payment";
-import { sendOrderExpiredEmailIfNeeded, sendOrderPaymentEmailIfNeeded } from "@/lib/order-mailer";
-import {
-  awardPointsInTransaction,
-  calculateEarnedPoints,
-  refundRedeemedPointsInTransaction,
-} from "@/lib/points";
 
-// Handler GET ini bukan buat fungsi bisnis apa-apa, cuma jaga-jaga kalau Midtrans
-// (atau kamu ngetes manual lewat browser) ngirim GET request buat verifikasi URL ini hidup.
-// Tanpa ini, GET request bakal kena 405 Method Not Allowed.
+// Legacy endpoint: all payments are now handled manually through WhatsApp.
 export async function GET() {
-  return NextResponse.json({ status: "ok", message: "Midtrans webhook endpoint is alive" });
+  return NextResponse.json({ status: "disabled", message: "Pembayaran Midtrans sudah dinonaktifkan. Gunakan WhatsApp." }, { status: 410 });
 }
 
+<<<<<<< HEAD
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -292,4 +277,8 @@ export async function POST(request: Request) {
     console.error("[POST /api/webhooks/midtrans]", error);
     return NextResponse.json({ error: "Webhook processing failed" }, { status: 500 });
   }
+=======
+export async function POST() {
+  return NextResponse.json({ status: "disabled", message: "Pembayaran Midtrans sudah dinonaktifkan. Gunakan WhatsApp." }, { status: 410 });
+>>>>>>> develop
 }

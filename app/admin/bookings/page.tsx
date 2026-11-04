@@ -6,6 +6,7 @@ import { CalendarDays, ClipboardList, RefreshCw, Search, Ticket, UsersRound } fr
 
 type BookingTab = "ALL" | "EVENT" | "PLAYPASS" | "TABLE";
 type EventBooking = {
+  id: string;
   bookingNumber: string;
   customerName: string;
   customerEmail: string;
@@ -15,6 +16,7 @@ type EventBooking = {
   tickets: { ticketCode: string; participantName: string; status: string; checkedInAt: string | null }[];
 };
 type PlaypassBooking = {
+  id: string;
   bookingNumber: string;
   customerName: string;
   customerEmail: string;
@@ -30,6 +32,7 @@ type PlaypassBooking = {
   tickets: { ticketNumber: string; status: string; checkedInAt: string | null }[];
 };
 type TableReservation = {
+  id: string;
   reservationNumber: string;
   customerName: string;
   customerEmail: string;
@@ -50,6 +53,7 @@ type BookingData = {
 };
 type BookingRow = {
   type: Exclude<BookingTab, "ALL">;
+  id: string;
   number: string;
   customerName: string;
   customerEmail: string;
@@ -100,6 +104,22 @@ export default function AdminBookingsPage() {
   const [query, setQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [confirming, setConfirming] = useState<string | null>(null);
+
+  async function confirmPayment(row: BookingRow) {
+    setConfirming(`${row.type}-${row.id}`);
+    setError(null);
+    try {
+      const response = await fetch("/api/admin/bookings", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ type: row.type, id: row.id, status: "PAID" }) });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error ?? "Gagal mengonfirmasi pembayaran");
+      await loadBookings();
+    } catch (confirmError) {
+      setError(confirmError instanceof Error ? confirmError.message : "Gagal mengonfirmasi pembayaran");
+    } finally {
+      setConfirming(null);
+    }
+  }
 
   async function loadBookings() {
     setIsLoading(true);
@@ -131,6 +151,7 @@ export default function AdminBookingsPage() {
       const checkedIn = booking.tickets.filter((ticket) => ticket.status === "CHECKED_IN").length;
       return {
         type: "EVENT",
+        id: booking.id,
         number: booking.bookingNumber,
         customerName: booking.customerName,
         customerEmail: booking.customerEmail,
@@ -143,6 +164,7 @@ export default function AdminBookingsPage() {
     });
     const playpassRows: BookingRow[] = data.playpasses.map((booking) => ({
       type: "PLAYPASS",
+      id: booking.id,
       number: booking.bookingNumber,
       customerName: booking.customerName,
       customerEmail: booking.customerEmail,
@@ -154,6 +176,7 @@ export default function AdminBookingsPage() {
     }));
     const tableRows: BookingRow[] = data.tableReservations.map((booking) => ({
       type: "TABLE",
+      id: booking.id,
       number: booking.reservationNumber,
       customerName: booking.customerName,
       customerEmail: booking.customerEmail,
@@ -243,7 +266,10 @@ export default function AdminBookingsPage() {
             </div>
             <div className="mt-4 flex flex-col gap-2 border-t border-black/5 pt-3 text-xs text-marica-ink-soft sm:flex-row sm:items-center sm:justify-between">
               <span className="truncate">{row.number} · {row.customerEmail}</span>
-              <Link href="/kasir" className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-marica-amber-dark px-3 py-2 font-semibold text-marica-amber-text transition hover:bg-marica-amber/10">Buka kasir untuk check-in</Link>
+              <div className="flex flex-wrap justify-end gap-2">
+                {row.status === "PENDING_PAYMENT" && <button type="button" onClick={() => void confirmPayment(row)} disabled={confirming !== null} className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-marica-amber-dark px-3 py-2 font-semibold text-white transition hover:bg-marica-amber disabled:opacity-50">{confirming === `${row.type}-${row.id}` ? "Memproses..." : "Konfirmasi pembayaran"}</button>}
+                <Link href="/kasir" className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-marica-amber-dark px-3 py-2 font-semibold text-marica-amber-text transition hover:bg-marica-amber/10">Buka kasir untuk check-in</Link>
+              </div>
             </div>
           </article>
         ))}

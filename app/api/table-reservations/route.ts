@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { snap } from "@/lib/midtrans";
 import { prisma } from "@/lib/prisma";
 import { auditAction } from "@/lib/audit";
 import { validateInteger, validatePhone, validateText } from "@/lib/request-validation";
 import { combineDateAndMinutes, dateKey, getTableReservationAvailability, parseDateInput, parseTimeInput, reservationNumber } from "@/lib/table-reservation";
 import { sendTableReservationEmailIfNeeded } from "@/lib/table-reservation-mailer";
 import { consumeFnbStock, normalizeParticipants, resolveFnbItems } from "@/lib/fnb";
+import { buildManualPaymentWhatsAppUrl } from "@/lib/whatsapp-checkout";
 
 const money = (value: number) => value;
 
@@ -67,10 +67,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ reservation, redirectUrl: `/reservasi/tiket/${reservation.reservationNumber}` }, { status: 201 });
     }
 
-    const transaction = await snap.createTransaction({ transaction_details: { order_id: bookingNumber, gross_amount: totalPrice }, customer_details: { first_name: reservation.customerName, email: reservation.customerEmail, phone: reservation.customerPhone ?? undefined }, item_details: [{ id: availability.package.id, price: availability.package.price, quantity: 1, name: availability.package.name.slice(0, 50) }, ...fnb.items.map((item) => ({ id: item.fnbProductId, price: item.unitPrice, quantity: item.quantity, name: `F&B ${item.fnbProductId}` }))] });
-    const updated = await prisma.tableReservation.update({ where: { id: reservation.id }, data: { midtransOrderId: bookingNumber, midtransSnapToken: transaction.token ?? transaction.redirect_url } });
+    const company = await prisma.companyProfile.findFirst({ select: { whatsapp: true } });
+    const whatsappUrl = company?.whatsapp
+      ? buildManualPaymentWhatsAppUrl(company.whatsapp, { reference: bookingNumber, customerName: reservation.customerName, total: totalPrice, description: `Reservasi meja ${availability.package.name}` })
+      : null;
+    if (!whatsappUrl) return NextResponse.json({ error: "Nomor WhatsApp pembayaran belum dikonfigurasi" }, { status: 503 });
     auditAction({ action: "table_reservation_created", status: "success", payload: { reservationNumber: bookingNumber, packageId, userId: session.user.id } });
-    return NextResponse.json({ reservation: updated, snapToken: transaction.token, redirectUrl: transaction.redirect_url }, { status: 201 });
+    return NextResponse.json({ reservation, whatsappUrl, redirectUrl: whatsappUrl }, { status: 201 });
   } catch (error) {
     if (error instanceof Error && ["FNB_PRODUCT_NOT_FOUND", "FNB_STOCK_SHORTAGE", "FNB_TOO_MANY_ITEMS", "PARTICIPANT_INVALID", "TOO_MANY_PARTICIPANTS"].includes(error.message)) {
       return NextResponse.json({ error: "Data peserta atau F&B tidak valid" }, { status: 400 });

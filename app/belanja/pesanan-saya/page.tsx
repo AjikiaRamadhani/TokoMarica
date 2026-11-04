@@ -316,6 +316,11 @@ function OrderCard({
           <span className="font-body text-xs text-marica-ink-soft">
             {order.orderNumber}
           </span>
+          {order.paymentMethod?.startsWith("offline_") && (
+            <span className="rounded-full bg-marica-green/15 px-2.5 py-1 font-body text-[11px] font-semibold text-marica-green">
+              Checkout offline
+            </span>
+          )}
           <span
             className={`rounded-full px-2.5 py-1 font-body text-[11px] font-semibold ${ORDER_STATUS_STYLE[order.status]}`}
           >

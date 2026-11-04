@@ -67,3 +67,20 @@ export function buildCheckoutWhatsAppUrl(
 
   return `https://wa.me/${normalized}?text=${encodeURIComponent(message)}`;
 }
+
+export function buildManualPaymentWhatsAppUrl(
+  number: string,
+  input: { reference: string; customerName: string; total: number; description: string },
+) {
+  const normalized = normalizeWhatsAppNumber(number);
+  if (!normalized) return null;
+  const message = [
+    "Halo Marica, saya ingin melakukan pembayaran manual.",
+    `Nomor transaksi: ${input.reference}`,
+    `Nama: ${input.customerName}`,
+    `Detail: ${input.description}`,
+    `Total: Rp${input.total.toLocaleString("id-ID")}`,
+    "Mohon diinformasikan rekening atau metode pembayaran dan dikonfirmasi setelah saya mengirim bukti pembayaran.",
+  ].join("\n");
+  return `https://wa.me/${normalized}?text=${encodeURIComponent(message)}`;
+}

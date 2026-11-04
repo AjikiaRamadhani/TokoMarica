@@ -24,10 +24,8 @@ export async function GET(
   try {
     const { slug } = await params;
     await expireStalePendingBookings();
-    const visibleAfter = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-
     const event = await prisma.event.findFirst({
-      where: { slug, isActive: true, eventDate: { gte: visibleAfter } },
+      where: { slug, isActive: true },
       include: {
         bookings: {
           where: {
@@ -52,7 +50,7 @@ export async function GET(
 
 function toEventItem({ bookings, ...event }: EventRecord) {
   const description = event.description;
-  const category = event.category.toLowerCase() === "parenting" ? "parenting" : "workshop";
+  const category = event.category.trim().toLowerCase().replace(/\s+/g, "-");
 
   return {
     slug: event.slug,

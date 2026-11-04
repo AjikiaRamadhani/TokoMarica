@@ -39,7 +39,11 @@ Detail matriks peran dan poin ada di [`docs/roles-and-points.md`](docs/roles-and
 | Styling | Tailwind CSS 4, Framer Motion, Lucide React, React Icons |
 | Database | PostgreSQL + Prisma 7 (`@prisma/adapter-pg`) |
 | Autentikasi | NextAuth (Auth.js) v5 beta, email/password (bcryptjs) dan Google OAuth |
+<<<<<<< HEAD
 | Pembayaran | WinPay (bawaan) atau Midtrans, dipilih lewat `PAYMENT_PROVIDER` |
+=======
+| Pembayaran | Manual melalui WhatsApp |
+>>>>>>> develop
 | Pengiriman | RajaOngkir via API Komerce |
 | Penyimpanan file | Supabase Storage (bucket `printables`) |
 | Email | Nodemailer (SMTP) |
@@ -102,6 +106,7 @@ NEXT_PUBLIC_SITE_URL=http://localhost:3000 # URL publik aplikasi; dipakai untuk 
 GOOGLE_CLIENT_ID=                # opsional
 GOOGLE_CLIENT_SECRET=            # opsional
 
+<<<<<<< HEAD
 # Pembayaran
 PAYMENT_PROVIDER=winpay          # winpay (bawaan bila kosong) atau midtrans
 MIDTRANS_SERVER_KEY=
@@ -117,6 +122,11 @@ WINPAY_BASE_URL=
 WINPAY_IS_PRODUCTION=false
 WINPAY_INVOICE_EXPIRY_MINUTES=
 WINPAY_DISABLE_WHATSAPP_FALLBACK=
+=======
+# Pembayaran manual
+# Nomor WhatsApp yang dipakai untuk checkout dan pembayaran booking.
+# Nomor utama sebaiknya diatur dari halaman Admin > Pengaturan > Profil perusahaan.
+>>>>>>> develop
 MARICA_WHATSAPP_NUMBER=
 
 # Storage
@@ -148,10 +158,8 @@ SUBSCRIPTION_CRON_SECRET=        # atau CRON_SECRET; untuk melindungi /api/cron/
 GAME_LAUNCH_TOKEN_SECRET=
 ```
 
-Daftarkan webhook pembayaran di dasbor penyedia:
-
-- `/api/webhooks/midtrans`
-- `/api/webhooks/winpay`
+Pembayaran dilakukan manual melalui WhatsApp. Admin memverifikasi bukti pembayaran
+dan mengubah status transaksi menjadi `PAID` dari dashboard admin.
 
 ## Struktur Folder
 

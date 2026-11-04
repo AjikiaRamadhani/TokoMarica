@@ -3,9 +3,10 @@ import test from "node:test";
 import { calculateEarnedPoints, calculatePointsDiscount } from "@/lib/points";
 import { calculateBundleDiscount } from "@/lib/checkout-pricing";
 
-test("earned points use Rp10.000 per point", () => {
-  assert.equal(calculateEarnedPoints(99_999), 9);
-  assert.equal(calculateEarnedPoints(100_000), 10);
+test("earned points use Rp50.000 per point", () => {
+  assert.equal(calculateEarnedPoints(49_999), 0);
+  assert.equal(calculateEarnedPoints(50_000), 1);
+  assert.equal(calculateEarnedPoints(125_000), 2);
   assert.equal(calculateEarnedPoints(0), 0);
 });
 

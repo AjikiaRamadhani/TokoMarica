@@ -1,4 +1,4 @@
-export type EventCategory = "workshop" | "parenting";
+export type EventCategory = string;
 
 export type EventItem = {
   slug: string;
@@ -20,15 +20,12 @@ export type EventItem = {
   };
 };
 
-export const CATEGORY_LABEL: Record<EventCategory, string> = {
+const CATEGORY_LABELS: Record<string, string> = {
   workshop: "Weekend Workshop",
   parenting: "Sesi Parenting",
 };
 
-export const CATEGORY_STYLE: Record<
-  EventCategory,
-  { bg: string; text: string; dot: string }
-> = {
+const CATEGORY_STYLES: Record<string, { bg: string; text: string; dot: string }> = {
   workshop: {
     bg: "bg-marica-amber-dark",
     text: "text-white",
@@ -40,6 +37,18 @@ export const CATEGORY_STYLE: Record<
     dot: "bg-marica-teal",
   },
 };
+
+export function categoryLabel(category: EventCategory) {
+  return CATEGORY_LABELS[category] ?? category.replace(/[-_]+/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+export function categoryStyle(category: EventCategory) {
+  return CATEGORY_STYLES[category] ?? {
+    bg: "bg-marica-blue",
+    text: "text-white",
+    dot: "bg-marica-blue",
+  };
+}
 
 export const DAY_LABELS_ID = ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"];
 

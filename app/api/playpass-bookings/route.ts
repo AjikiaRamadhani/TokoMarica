@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { snap } from "@/lib/midtrans";
 import { prisma } from "@/lib/prisma";
 import { auditAction } from "@/lib/audit";
 import { getPlaypassSlotAvailability, combineDateAndMinutes, dateKey, parseDateInput, parseTimeInput } from "@/lib/playpass-booking";
@@ -8,6 +7,7 @@ import { sendPlaypassTicketEmailIfNeeded } from "@/lib/playpass-ticket-mailer";
 import { validateInteger, validatePhone, validateText } from "@/lib/request-validation";
 import crypto from "crypto";
 import { consumeFnbStock, normalizeParticipants, resolveFnbItems } from "@/lib/fnb";
+import { buildManualPaymentWhatsAppUrl } from "@/lib/whatsapp-checkout";
 
 function bookingNumber() {
   return `PPB-${Date.now().toString(36).toUpperCase()}-${crypto.randomUUID().slice(0, 6).toUpperCase()}`;
@@ -88,17 +88,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ booking, redirectUrl: `/playpass/tiket/${booking.bookingNumber}` }, { status: 201 });
     }
 
-    const transaction = await snap.createTransaction({
-      transaction_details: { order_id: number, gross_amount: booking.totalPrice },
-      customer_details: { first_name: booking.customerName, email: booking.customerEmail, phone: booking.customerPhone ?? undefined },
-      item_details: [
-        { id: availability.package.id, price: availability.package.price, quantity: booking.quantity, name: availability.package.name.slice(0, 50) },
-        ...fnb.items.map((item) => ({ id: item.fnbProductId, price: item.unitPrice, quantity: item.quantity, name: `F&B ${item.fnbProductId}` })),
-      ],
-    });
-    const updated = await prisma.playpassBooking.update({ where: { id: booking.id }, data: { midtransOrderId: number, midtransSnapToken: transaction.token ?? transaction.redirect_url } });
+    const company = await prisma.companyProfile.findFirst({ select: { whatsapp: true } });
+    const whatsappUrl = company?.whatsapp
+      ? buildManualPaymentWhatsAppUrl(company.whatsapp, { reference: number, customerName: booking.customerName, total: booking.totalPrice, description: `Playpass ${availability.package.name}` })
+      : null;
+    if (!whatsappUrl) return NextResponse.json({ error: "Nomor WhatsApp pembayaran belum dikonfigurasi" }, { status: 503 });
     auditAction({ action: "playpass_booking_created", status: "success", payload: { bookingNumber: number, packageId, userId: session.user.id } });
-    return NextResponse.json({ booking: updated, snapToken: transaction.token, redirectUrl: transaction.redirect_url }, { status: 201 });
+    return NextResponse.json({ booking, whatsappUrl, redirectUrl: whatsappUrl }, { status: 201 });
   } catch (error) {
     if (error instanceof Error && ["FNB_PRODUCT_NOT_FOUND", "FNB_STOCK_SHORTAGE", "FNB_TOO_MANY_ITEMS", "PARTICIPANT_INVALID", "TOO_MANY_PARTICIPANTS"].includes(error.message)) {
       return NextResponse.json({ error: "Data peserta atau F&B tidak valid" }, { status: 400 });

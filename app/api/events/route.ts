@@ -20,10 +20,8 @@ type EventRecord = {
 export async function GET() {
   try {
     await expireStalePendingBookings();
-    const visibleAfter = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-
     const events = await prisma.event.findMany({
-      where: { isActive: true, eventDate: { gte: visibleAfter } },
+      where: { isActive: true },
       orderBy: { eventDate: "asc" },
       include: {
         bookings: {
@@ -47,7 +45,7 @@ export async function GET() {
 
 function toEventItem({ bookings, ...event }: EventRecord) {
   const date = event.eventDate.toISOString().slice(0, 10);
-  const category = event.category.toLowerCase() === "parenting" ? "parenting" : "workshop";
+  const category = event.category.trim().toLowerCase().replace(/\s+/g, "-");
   const description = event.description;
 
   return {

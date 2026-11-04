@@ -24,7 +24,7 @@ export async function PATCH(
         ...(typeof body.thumbnailUrl === "string" ? { thumbnailUrl: body.thumbnailUrl.trim() || null } : {}),
         ...(typeof body.fileUrl === "string" ? { fileUrl: body.fileUrl.trim() } : {}),
         ...(typeof body.price === "number" && body.price >= 0 ? { price: body.price } : {}),
-        ...(typeof body.points === "number" && Number.isInteger(body.points) && body.points >= 0 ? { points: body.points } : {}),
+        points: 0,
         ...(typeof body.isFeatured === "boolean" ? { isFeatured: body.isFeatured } : {}),
         ...(typeof body.isActive === "boolean" ? { isActive: body.isActive } : {}),
       },

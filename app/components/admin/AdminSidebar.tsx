@@ -483,6 +483,22 @@ function SidebarContent({
                         Keuangan
                       </span>
                     </Link>
+                    <Link
+                      href="/kasir/bookings"
+                      onClick={onNavigate}
+                      className="relative"
+                    >
+                      {pathname === "/kasir/bookings" && (
+                        <motion.span
+                          layoutId="admin-nav-active"
+                          className="absolute inset-0 rounded-xl bg-marica-amber-dark"
+                        />
+                      )}
+                      <span className={`relative flex items-center gap-3 rounded-xl px-3.5 py-2.5 font-body text-sm font-medium ${pathname === "/kasir/bookings" ? "text-white" : "text-marica-ink-soft hover:bg-marica-sky-light/60 hover:text-marica-ink"}`}>
+                        <CalendarRange className="h-4.5 w-4.5" />
+                        Booking
+                      </span>
+                    </Link>
                   </>
                 )}
               </div>
@@ -623,6 +639,11 @@ export default function AdminSidebar({
               {role === "KASIR" && (
                 <Link href="/kasir/keuangan" aria-label="Keuangan" className={`mt-2 rounded-xl p-2 ${pathname === "/kasir/keuangan" ? "bg-marica-amber-dark text-white" : "text-marica-ink-soft hover:bg-marica-sky-light/60"}`}>
                   <WalletCards className="h-5 w-5" />
+                </Link>
+              )}
+              {role === "KASIR" && (
+                <Link href="/kasir/bookings" aria-label="Booking" className={`mt-2 rounded-xl p-2 ${pathname === "/kasir/bookings" ? "bg-marica-amber-dark text-white" : "text-marica-ink-soft hover:bg-marica-sky-light/60"}`}>
+                  <CalendarRange className="h-5 w-5" />
                 </Link>
               )}
               <div className="mt-auto mb-4 flex h-9 w-9 items-center justify-center rounded-full bg-marica-amber-dark font-body text-sm font-semibold text-white">
