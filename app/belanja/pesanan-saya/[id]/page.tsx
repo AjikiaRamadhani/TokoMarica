@@ -216,6 +216,11 @@ export default function OrderDetailPage() {
                   <p className="mt-1 font-body text-sm text-marica-ink-soft">
                     {order.orderNumber} · {formatDate(order.createdAt)}
                   </p>
+                  {order.paymentMethod?.startsWith("offline_") && (
+                    <span className="mt-2 inline-flex rounded-full bg-marica-green/15 px-2.5 py-1 font-body text-xs font-semibold text-marica-green">
+                      Checkout offline melalui kasir
+                    </span>
+                  )}
                 </div>
                 <span
                   className={`rounded-full px-3 py-1.5 font-body text-xs font-semibold ${ORDER_STATUS_STYLE[order.status]}`}
