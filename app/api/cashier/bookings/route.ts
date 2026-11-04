@@ -12,7 +12,7 @@ export async function GET() {
         orderBy: { createdAt: "desc" },
         take: 50,
         include: {
-          event: { select: { title: true, eventDate: true, startTime: true, endTime: true } },
+          event: { select: { id: true, title: true, eventDate: true, startTime: true, endTime: true } },
           tickets: { select: { ticketCode: true, participantName: true, status: true, checkedInAt: true } },
         },
       }),
@@ -20,14 +20,14 @@ export async function GET() {
         orderBy: { createdAt: "desc" },
         take: 50,
         include: {
-          package: { select: { name: true } },
+          package: { select: { id: true, name: true } },
           tickets: { select: { ticketNumber: true, status: true, checkedInAt: true } },
         },
       }),
       prisma.tableReservation.findMany({
         orderBy: { createdAt: "desc" },
         take: 50,
-        include: { package: { select: { name: true } } },
+        include: { package: { select: { id: true, name: true } } },
       }),
     ]);
 

@@ -82,9 +82,17 @@ type Sale = {
   changeAmount: number;
   paymentMethod: string;
   createdAt: string;
+  customer: {
+    id: string;
+    name: string | null;
+    email: string | null;
+    whatsapp: string | null;
+  } | null;
   items: {
     itemName: string;
     quantity: number;
+    unitPrice?: number;
+    subtotal?: number;
     type?: CartItem["type"];
     productId?: string | null;
   }[];
@@ -1643,7 +1651,7 @@ export default function PosPage() {
         )}
       </section>
 
-      <section
+      {false && <section
         id="kasir-riwayat-transaksi"
         className="mt-6 rounded-3xl border border-black/5 bg-white p-5 shadow-sm sm:p-6"
       >
@@ -1673,11 +1681,12 @@ export default function PosPage() {
           />
         </div>
         <div className="mt-5 overflow-x-auto">
-          <table className="w-full min-w-180 text-left">
+          <table className="w-full min-w-240 text-left">
             <thead>
               <tr className="border-b border-black/5 font-body text-xs uppercase tracking-wide text-marica-ink-soft/60">
                 <th className="pb-3">Transaksi</th>
-                <th className="pb-3">Item</th>
+                <th className="pb-3">Yang dibeli</th>
+                <th className="pb-3">Member</th>
                 <th className="pb-3">Pembayaran</th>
                 <th className="pb-3">Total</th>
                 <th className="pb-3">Status</th>
@@ -1688,7 +1697,7 @@ export default function PosPage() {
               {visibleSales.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={6}
+                    colSpan={7}
                     className="py-10 text-center font-body text-sm text-marica-ink-soft"
                   >
                     Belum ada transaksi pada akun ini.
@@ -1708,10 +1717,43 @@ export default function PosPage() {
                         {new Date(sale.createdAt).toLocaleString("id-ID")}
                       </p>
                     </td>
-                    <td className="max-w-64 py-4 font-body text-sm text-marica-ink-soft">
-                      {sale.items
-                        .map((item) => `${item.itemName} x${item.quantity}`)
-                        .join(", ")}
+                    <td className="max-w-80 py-3">
+                      <div className="space-y-1.5">
+                        {sale.items.map((item, index) => (
+                          <div
+                            key={`${item.itemName}-${index}`}
+                            className="flex items-center justify-between gap-4 rounded-lg bg-marica-sky-light/40 px-2.5 py-1.5 font-body text-xs"
+                          >
+                            <span className="min-w-0 truncate font-semibold text-marica-ink">
+                              {item.itemName}
+                            </span>
+                            <span className="shrink-0 text-marica-ink-soft">
+                              x{item.quantity}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </td>
+                    <td className="min-w-52 py-3">
+                      {sale.customer ? (
+                        <div className="flex items-start gap-2">
+                          <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-marica-amber/20 text-marica-amber-text">
+                            <UserRound className="h-3.5 w-3.5" />
+                          </span>
+                          <div className="min-w-0 font-body text-xs">
+                            <p className="truncate font-bold text-marica-ink">
+                              {sale.customer.name ?? "Member Marica"}
+                            </p>
+                            <p className="truncate text-marica-ink-soft">
+                              {sale.customer.email ?? sale.customer.whatsapp ?? "Akun member"}
+                            </p>
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="font-body text-xs text-marica-ink-soft">
+                          Non-member
+                        </span>
+                      )}
                     </td>
                     <td className="py-4 font-body text-sm text-marica-ink-soft">
                       {sale.paymentMethod}
@@ -1793,7 +1835,7 @@ export default function PosPage() {
             </button>
           </div>
         )}
-      </section>
+      </section>}
     </div>
   );
 }

@@ -127,7 +127,7 @@ export async function POST(request: Request) {
       const total = subtotal - discountAmount;
       if (body.paidAmount! < total) throw new Error("PAYMENT_SHORTAGE");
       if (body.paymentMethod !== "CASH" && body.paidAmount !== total) throw new Error("PAYMENT_MISMATCH");
-      const created = await tx.cashierTransaction.create({ data: { transactionNumber: saleNumber(), cashierId: session.user.id, customerId: body.customerId || null, shiftId: shift.id, subtotal, discountAmount, userVoucherId: userVoucherCheck.value, total, paymentMethod: body.paymentMethod as "CASH" | "QRIS", paidAmount: body.paidAmount!, changeAmount: body.paidAmount! - total, notes: body.notes?.trim() || null, items: { create: lineItems } }, include: { items: true } });
+      const created = await tx.cashierTransaction.create({ data: { transactionNumber: saleNumber(), cashierId: session.user.id, customerId: body.customerId || null, shiftId: shift.id, subtotal, discountAmount, userVoucherId: userVoucherCheck.value, total, paymentMethod: body.paymentMethod as "CASH" | "QRIS", paidAmount: body.paidAmount!, changeAmount: body.paidAmount! - total, notes: body.notes?.trim() || null, items: { create: lineItems } }, include: { items: true, customer: { select: { id: true, name: true, email: true, whatsapp: true } } } });
       if (userVoucherCheck.value) {
         const changedVoucher = await tx.userVoucher.updateMany({ where: { id: userVoucherCheck.value, userId: body.customerId!, status: "AVAILABLE" }, data: { status: "USED", usedAt: new Date() } });
         if (changedVoucher.count !== 1) throw new Error("VOUCHER_UNAVAILABLE");
