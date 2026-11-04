@@ -18,8 +18,8 @@ import {
 import Navbar from "@/app/components/Navbar";
 import Footer from "@/app/components/Footer";
 import {
-  CATEGORY_LABEL,
-  CATEGORY_STYLE,
+  categoryLabel,
+  categoryStyle,
   formatLongDateID,
   isEventExpired,
   type EventItem,
@@ -73,7 +73,7 @@ export default function EventDetailPage() {
       </div>
     );
 
-  const style = CATEGORY_STYLE[event.category];
+  const style = categoryStyle(event.category);
   const expired = isEventExpired(event.date);
   const quotaFilled = event.quota - event.quotaLeft;
   const quotaPct = Math.round((quotaFilled / event.quota) * 100);
@@ -108,7 +108,7 @@ export default function EventDetailPage() {
             <span
               className={`inline-block rounded-full px-3.5 py-1.5 font-body text-xs font-semibold ${style.bg} ${style.text}`}
             >
-              {CATEGORY_LABEL[event.category]}
+              {categoryLabel(event.category)}
             </span>
             {expired && (
               <motion.span
@@ -315,7 +315,7 @@ export default function EventDetailPage() {
               </h2>
               <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
                 {related.map((ev, i) => {
-                  const s = CATEGORY_STYLE[ev.category];
+                  const s = categoryStyle(ev.category);
                   return (
                     <motion.div
                       key={ev.slug}
@@ -333,7 +333,7 @@ export default function EventDetailPage() {
                       <span
                         className={`inline-block rounded-full px-3 py-1 font-body text-xs font-semibold ${s.bg} ${s.text}`}
                       >
-                        {CATEGORY_LABEL[ev.category]}
+                        {categoryLabel(ev.category)}
                       </span>
                       <h3 className="mt-3 font-display text-sm font-bold text-marica-ink">
                         {ev.title}
