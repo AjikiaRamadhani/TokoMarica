@@ -129,7 +129,7 @@ export default function EventRegistrationPage() {
                 />
               </label>
               <label className="text-sm font-medium text-marica-ink">
-                Nomor WhatsApp (opsional)
+                Nomor WhatsApp
                 <input
                   type="tel"
                   value={phone}
