@@ -41,7 +41,7 @@ export async function GET(request: Request) {
     const categorySlug = searchParams.get("category");
     const search = searchParams.get("search");
     const media = searchParams.get("media");
-    if (media && media !== "video") {
+    if (media && media !== "video" && media !== "article") {
       return NextResponse.json({ error: "Media artikel tidak valid" }, { status: 400 });
     }
 
@@ -49,6 +49,7 @@ export async function GET(request: Request) {
       ...(status ? { status: status as "DRAFT" | "PUBLISHED" } : {}),
       ...(categorySlug && categorySlug !== "semua" ? { category: { slug: categorySlug } } : {}),
       ...(media === "video" ? { videoUrl: { not: null } } : {}),
+      ...(media === "article" ? { videoUrl: null } : {}),
       ...(search
         ? { title: { contains: search, mode: "insensitive" as const } }
         : {}),

@@ -42,7 +42,13 @@ function toDateInputValue(iso: string | null) {
   return d.toISOString().slice(0, 10);
 }
 
-export default function ArticleForm({ initialData }: { initialData?: ArticleFormInitialData }) {
+export default function ArticleForm({
+  initialData,
+  mode = "article",
+}: {
+  initialData?: ArticleFormInitialData;
+  mode?: "article" | "video";
+}) {
   const router = useRouter();
   const isEdit = !!initialData;
 
@@ -214,7 +220,7 @@ export default function ArticleForm({ initialData }: { initialData?: ArticleForm
       const json = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(json?.error ?? "Gagal menyimpan artikel");
 
-      router.push("/admin/artikel");
+      router.push(mode === "video" ? "/admin/video" : "/admin/artikel");
       router.refresh();
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : "Gagal menyimpan artikel");
@@ -240,24 +246,26 @@ export default function ArticleForm({ initialData }: { initialData?: ArticleForm
       className="mx-auto max-w-3xl"
     >
       <h1 className="font-display text-2xl font-semibold text-marica-ink">
-        {isEdit ? "Edit Artikel" : "Tambah Artikel Baru"}
+        {isEdit ? (mode === "video" ? "Edit Video" : "Edit Artikel") : mode === "video" ? "Tambah Video Baru" : "Tambah Artikel Baru"}
       </h1>
       <p className="mt-1 font-body text-sm text-marica-ink-soft">
-        {isEdit ? "Perbarui isi artikel di bawah ini." : "Isi detail artikel yang ingin dipublikasikan."}
+        {isEdit
+          ? mode === "video" ? "Perbarui detail video di bawah ini." : "Perbarui isi artikel di bawah ini."
+          : mode === "video" ? "Isi detail video yang ingin dipublikasikan." : "Isi detail artikel yang ingin dipublikasikan."}
       </p>
 
       <div className="mt-6 rounded-2xl bg-white p-6 shadow-sm sm:p-8">
         <div className="flex flex-col gap-6">
           <div>
             <label htmlFor="title" className="mb-1.5 block font-body text-sm font-medium text-marica-ink">
-              Judul Artikel
+              {mode === "video" ? "Judul Video" : "Judul Artikel"}
             </label>
             <input
               id="title"
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Tulis judul artikel di sini..."
+              placeholder={mode === "video" ? "Tulis judul video di sini..." : "Tulis judul artikel di sini..."}
               className="w-full rounded-xl border border-black/10 bg-marica-sky-light/30 px-4 py-2.5 font-body text-[15px] text-marica-ink outline-none transition placeholder:text-marica-ink-soft/50 focus:border-marica-amber focus:bg-white focus:ring-4 focus:ring-marica-amber/15"
             />
           </div>
@@ -336,8 +344,8 @@ export default function ArticleForm({ initialData }: { initialData?: ArticleForm
 
           <section className="rounded-2xl border border-marica-amber/30 bg-marica-amber/5 p-4">
             <div>
-              <h2 className="font-body text-sm font-semibold text-marica-ink">Video Showcase</h2>
-              <p className="mt-1 font-body text-xs text-marica-ink-soft">Isi bagian ini jika artikel ingin ditampilkan di halaman Video Showcase.</p>
+              <h2 className="font-body text-sm font-semibold text-marica-ink">Detail Video</h2>
+                <p className="mt-1 font-body text-xs text-marica-ink-soft">Lengkapi sumber video untuk menampilkannya di Video Showcase.</p>
             </div>
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               <div className="sm:col-span-2">
@@ -420,7 +428,7 @@ export default function ArticleForm({ initialData }: { initialData?: ArticleForm
 
           <div>
             <label htmlFor="excerpt" className="mb-1.5 block font-body text-sm font-medium text-marica-ink">
-              Ringkasan Singkat
+              {mode === "video" ? "Deskripsi Video" : "Ringkasan Singkat"}
             </label>
             <textarea
               id="excerpt"
@@ -428,13 +436,13 @@ export default function ArticleForm({ initialData }: { initialData?: ArticleForm
               onChange={(e) => setExcerpt(e.target.value)}
               rows={2}
               maxLength={500}
-              placeholder="Ringkasan singkat artikel (opsional, tampil di daftar artikel)"
+              placeholder={mode === "video" ? "Deskripsi singkat video (opsional)" : "Ringkasan singkat artikel (opsional, tampil di daftar artikel)"}
               className="w-full resize-none rounded-xl border border-black/10 bg-marica-sky-light/30 px-4 py-2.5 font-body text-[15px] text-marica-ink outline-none transition placeholder:text-marica-ink-soft/50 focus:border-marica-amber focus:bg-white focus:ring-4 focus:ring-marica-amber/15"
             />
           </div>
 
           <div>
-            <label className="mb-1.5 block font-body text-sm font-medium text-marica-ink">Konten Artikel</label>
+            <label className="mb-1.5 block font-body text-sm font-medium text-marica-ink">{mode === "video" ? "Catatan Video" : "Konten Artikel"}</label>
             <div className="overflow-hidden rounded-xl border border-black/10 bg-white focus-within:border-marica-amber focus-within:ring-4 focus-within:ring-marica-amber/15">
               <div className="flex flex-wrap items-center gap-1 border-b border-black/10 bg-marica-sky-light/20 px-2 py-1.5">
                 {toolbarButtons.map(({ icon: Icon, label, command }) => (
@@ -482,7 +490,7 @@ export default function ArticleForm({ initialData }: { initialData?: ArticleForm
           <div className="flex flex-col-reverse gap-3 border-t border-black/5 pt-5 sm:flex-row sm:justify-end">
             <button
               type="button"
-              onClick={() => router.push("/admin/artikel")}
+              onClick={() => router.push(mode === "video" ? "/admin/video" : "/admin/artikel")}
               className="rounded-full border border-black/10 px-5 py-2.5 font-body text-sm font-semibold text-marica-ink-soft transition hover:bg-black/3 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-marica-ink/10"
             >
               Batal

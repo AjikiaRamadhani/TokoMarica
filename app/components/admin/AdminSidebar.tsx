@@ -222,6 +222,8 @@ function SidebarContent({
     pathname.startsWith("/admin/artikel/") ||
     pathname === "/admin/kategori" ||
     pathname.startsWith("/admin/kategori/");
+  const isVideoActive =
+    pathname === "/admin/video" || pathname.startsWith("/admin/video/");
   const isPrintableActive =
     pathname === "/admin/printables" ||
     pathname.startsWith("/admin/printables/");
@@ -297,6 +299,17 @@ function SidebarContent({
                   <Newspaper className="h-4.5 w-4.5" />
                   Artikel
                 </span>
+              </Link>
+              <Link
+                href="/admin/video"
+                onClick={onNavigate}
+                className={`relative ml-1 rounded-xl px-3.5 py-2.5 font-body text-sm font-medium ${
+                  isVideoActive
+                    ? "bg-marica-amber-dark text-white"
+                    : "text-marica-ink-soft hover:bg-marica-sky-light/60 hover:text-marica-ink"
+                }`}
+              >
+                Video
               </Link>
 
               {/* Tombol Toggle Bergulir (Dropdown Arrow) */}
