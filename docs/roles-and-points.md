@@ -26,7 +26,7 @@ Yang sudah tersedia:
 
 - Saldo dan riwayat poin user.
 - Earn dari order produk dan booking event yang sudah `PAID`.
-- Earn dari download printable yang memiliki nilai poin.
+- Download printable tidak memberikan poin; printable hanya berfungsi sebagai lead magnet.
 - Idempotency webhook dan reversal saat order dibatalkan.
 - Katalog voucher admin dengan status `DRAFT`, `ACTIVE`, dan `INACTIVE`.
 - Penukaran poin menjadi voucher melalui wallet voucher user.

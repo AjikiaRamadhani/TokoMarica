@@ -12,6 +12,8 @@ export async function GET() {
       reservations: {
         orderBy: { createdAt: "desc" },
         select: {
+          id: true,
+          userId: true,
           reservationNumber: true,
           customerName: true,
           customerEmail: true,

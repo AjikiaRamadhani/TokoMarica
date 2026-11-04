@@ -104,7 +104,7 @@ export async function settlePlaypassBooking(bookingId: string, transactionId: st
       where: { id: booking.id, status: "PENDING_PAYMENT" },
       data: {
         status: "PAID",
-        midtransTransactionId: transactionId,
+        midtransTransactionId: null,
         paidAt: new Date(),
       },
     });
@@ -126,7 +126,7 @@ export async function settlePlaypassBooking(bookingId: string, transactionId: st
           cashierId: null,
           quantity: booking.quantity,
           total: booking.totalPrice,
-          paymentMethod: "MIDTRANS",
+          paymentMethod: "WHATSAPP",
           paidAmount: booking.totalPrice,
           changeAmount: 0,
           validFrom: booking.startTime,

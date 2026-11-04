@@ -39,7 +39,7 @@ Detail matriks peran dan poin ada di [`docs/roles-and-points.md`](docs/roles-and
 | Styling | Tailwind CSS 4, Framer Motion, Lucide React, React Icons |
 | Database | PostgreSQL + Prisma 7 (`@prisma/adapter-pg`) |
 | Autentikasi | NextAuth (Auth.js) v5 beta, email/password (bcryptjs) dan Google OAuth |
-| Pembayaran | Midtrans atau WinPay (dipilih lewat `PAYMENT_PROVIDER`) |
+| Pembayaran | Manual melalui WhatsApp |
 | Pengiriman | RajaOngkir via API Komerce |
 | Penyimpanan file | Supabase Storage (bucket `printables`) |
 | Email | Nodemailer (SMTP) |
@@ -99,20 +99,9 @@ NEXT_PUBLIC_SITE_URL=http://localhost:3000 # URL publik aplikasi; dipakai untuk 
 GOOGLE_CLIENT_ID=                # opsional
 GOOGLE_CLIENT_SECRET=            # opsional
 
-# Pembayaran
-PAYMENT_PROVIDER=midtrans        # midtrans atau winpay
-MIDTRANS_SERVER_KEY=
-MIDTRANS_CLIENT_KEY=
-NEXT_PUBLIC_MIDTRANS_CLIENT_KEY=
-MIDTRANS_IS_PRODUCTION=false
-WINPAY_API_KEY=
-WINPAY_SECRET_KEY=
-WINPAY_CALLBACK_PUBLIC_KEY= # public key WinPay untuk verifikasi X-Signature callback
-WINPAY_REQUIRE_WEBHOOK_SIGNATURE=false # ubah true saat callback sandbox sudah menyediakan signature
-WINPAY_BASE_URL=
-WINPAY_IS_PRODUCTION=false
-WINPAY_INVOICE_EXPIRY_MINUTES=
-WINPAY_DISABLE_WHATSAPP_FALLBACK=
+# Pembayaran manual
+# Nomor WhatsApp yang dipakai untuk checkout dan pembayaran booking.
+# Nomor utama sebaiknya diatur dari halaman Admin > Pengaturan > Profil perusahaan.
 MARICA_WHATSAPP_NUMBER=
 
 # Storage
@@ -139,10 +128,8 @@ WHATSAPP_PRINTABLE_TEMPLATE_LANGUAGE=
 RAJAONGKIR_API_KEY=
 ```
 
-Daftarkan webhook pembayaran di dasbor penyedia:
-
-- `/api/webhooks/midtrans`
-- `/api/webhooks/winpay`
+Pembayaran dilakukan manual melalui WhatsApp. Admin memverifikasi bukti pembayaran
+dan mengubah status transaksi menjadi `PAID` dari dashboard admin.
 
 ## Struktur Folder
 

@@ -11,9 +11,8 @@ type OrderToSettle = {
 };
 
 /**
- * Finalizes a verified Midtrans payment exactly once. This is shared by the
- * webhook and the client-triggered status sync used when a local webhook URL
- * cannot be reached by Midtrans Sandbox.
+ * Finalizes a verified payment exactly once. For the WhatsApp/manual flow,
+ * this is called by the admin after payment is verified.
  */
 export async function settleOrderPayment(
   order: OrderToSettle,
@@ -70,7 +69,7 @@ export async function settleOrderPayment(
       where: { id: order.id, status: "PENDING_PAYMENT" },
       data: {
         status: "PAID",
-        midtransTransactionId: transactionId,
+        midtransTransactionId: null,
         paidAt: new Date(),
       },
     });
@@ -97,7 +96,7 @@ export async function settleOrderPayment(
         location: "ONLINE_WAREHOUSE" as const,
         type: "SALE" as const,
         quantityDelta: -item.quantity,
-        reason: "Midtrans payment settled",
+        reason: "Pembayaran pesanan terverifikasi admin",
         referenceId: transactionId,
       })),
     });

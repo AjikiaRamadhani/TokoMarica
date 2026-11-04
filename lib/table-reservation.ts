@@ -57,7 +57,7 @@ export async function settleTableReservation(reservationId: string, transactionI
     if (!reservation) return null;
     const changed = await transaction.tableReservation.updateMany({
       where: { id: reservation.id, status: "PENDING_PAYMENT" },
-      data: { status: "PAID", midtransTransactionId: transactionId, paidAt: new Date() },
+      data: { status: "PAID", midtransTransactionId: null, paidAt: new Date() },
     });
     if (changed.count === 0) return reservation;
     await consumeFnbStock(transaction, reservation.fnbItems);

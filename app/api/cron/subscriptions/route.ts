@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { snap } from "@/lib/midtrans";
 import { addSubscriptionPeriod, subscriptionNumber } from "@/lib/subscription";
+import { buildManualPaymentWhatsAppUrl } from "@/lib/whatsapp-checkout";
 
 export const dynamic = "force-dynamic";
 
@@ -17,7 +17,7 @@ async function runScheduler(request: Request) {
     include: { plan: true, user: { select: { email: true, name: true, whatsapp: true } } },
     take: 100,
   });
-  const results: { subscriptionNumber: string; cycleNumber?: string; status: string }[] = [];
+  const results: { subscriptionNumber: string; cycleNumber?: string; status: string; whatsappUrl?: string | null }[] = [];
 
   for (const subscription of dueSubscriptions) {
     const periodStart = subscription.nextBillingAt;
@@ -37,13 +37,11 @@ async function runScheduler(request: Request) {
         results.push({ subscriptionNumber: subscription.subscriptionNumber, cycleNumber: cycle.cycleNumber, status: "already_created" });
         continue;
       }
-      const transaction = await snap.createTransaction({
-        transaction_details: { order_id: cycle.cycleNumber, gross_amount: subscription.plan.price },
-        customer_details: { first_name: subscription.user.name ?? subscription.shippingName, email: subscription.user.email ?? undefined, phone: subscription.user.whatsapp ?? subscription.shippingPhone },
-        item_details: [{ id: subscription.plan.id, price: subscription.plan.price, quantity: 1, name: subscription.plan.name.slice(0, 50) }],
-      });
-      await prisma.subscriptionCycle.update({ where: { id: cycle.id }, data: { midtransOrderId: cycle.cycleNumber, midtransSnapToken: transaction.token ?? transaction.redirect_url } });
-      results.push({ subscriptionNumber: subscription.subscriptionNumber, cycleNumber: cycle.cycleNumber, status: "created" });
+      const company = await prisma.companyProfile.findFirst({ select: { whatsapp: true } });
+      const whatsappUrl = company?.whatsapp
+        ? buildManualPaymentWhatsAppUrl(company.whatsapp, { reference: cycle.cycleNumber, customerName: subscription.user.name ?? subscription.shippingName, total: subscription.plan.price, description: `Tagihan subscription ${subscription.plan.name}` })
+        : null;
+      results.push({ subscriptionNumber: subscription.subscriptionNumber, cycleNumber: cycle.cycleNumber, status: "created", whatsappUrl });
     } catch (error) {
       console.error("[POST /api/cron/subscriptions]", subscription.subscriptionNumber, error);
       results.push({ subscriptionNumber: subscription.subscriptionNumber, status: "failed" });
