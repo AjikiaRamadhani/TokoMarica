@@ -143,7 +143,7 @@ export default function PosPage() {
   const [openingCash, setOpeningCash] = useState("");
   const [closingCash, setClosingCash] = useState("");
   const [paidAmount, setPaidAmount] = useState("");
-  const [paymentMethod] = useState<"CASH">("CASH");
+  const [paymentMethod, setPaymentMethod] = useState<"CASH" | "QRIS">("CASH");
   const [tableNumber, setTableNumber] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -741,7 +741,7 @@ export default function PosPage() {
           <div class="voucher-row applied"><span>Potongan diterapkan</span><span>-${escapeHtml(money(data.discountAmount ?? 0))}</span></div>
         </section>`
       : "";
-    const paymentLabel = "Tunai";
+    const paymentLabel = data.paymentMethod === "QRIS" ? "QRIS" : "Tunai";
     const statusLabel =
       data.status === "VOIDED" ? "DIBATALKAN / VOID" : "LUNAS";
 
@@ -1436,9 +1436,25 @@ export default function PosPage() {
                 {money(total)}
               </strong>
             </div>
-            <div className="flex items-center gap-2 rounded-xl border border-marica-amber-dark bg-marica-amber/10 px-3 py-2.5 font-body text-xs font-bold text-marica-amber-text">
-              <Banknote className="h-4 w-4" />
-              Pembayaran tunai
+            <div className="grid grid-cols-2 gap-2">
+              {([
+                ["CASH", "Tunai", Banknote],
+                ["QRIS", "QRIS", QrCode],
+              ] as const).map(([value, label, Icon]) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setPaymentMethod(value)}
+                  className={`flex items-center justify-center gap-2 rounded-xl border px-3 py-2.5 font-body text-xs font-bold transition ${
+                    paymentMethod === value
+                      ? "border-marica-amber-dark bg-marica-amber/10 text-marica-amber-text"
+                      : "border-black/10 bg-white text-marica-ink-soft"
+                  }`}
+                >
+                  <Icon className="h-4 w-4" />
+                  {label}
+                </button>
+              ))}
             </div>
             <label
               className="mt-3 block font-body text-xs font-semibold text-marica-ink-soft"

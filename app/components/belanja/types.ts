@@ -177,6 +177,8 @@ export type ApiOrder = {
   shippingCost: number;
   trackingNumber: string | null;
   trackingUrl: string | null;
+  paymentMethod: string | null;
+  fulfillmentNote: string | null;
   subtotal: number;
   pointsUsed: number;
   pointsDiscount: number;
