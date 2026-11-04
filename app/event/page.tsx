@@ -33,6 +33,7 @@ import {
 export const dynamic = "force-dynamic";
 
 type CategoryFilter = "semua" | EventCategory;
+type TimeFilter = "mendatang" | "sebelumnya" | "semua";
 type ViewMode = "kalender" | "daftar";
 
 // Sel kalender: tanggal asli + apakah termasuk bulan yang sedang dilihat.
@@ -83,6 +84,7 @@ export default function EventCalendarPage() {
     () => new Date(today.getFullYear(), today.getMonth(), 1),
   );
   const [category, setCategory] = useState<CategoryFilter>("semua");
+  const [timeFilter, setTimeFilter] = useState<TimeFilter>("mendatang");
   const [query, setQuery] = useState("");
   const [view, setView] = useState<ViewMode>("kalender");
 
@@ -128,12 +130,14 @@ export default function EventCalendarPage() {
   const filteredEvents = useMemo(() => {
     return events.filter((ev) => {
       const matchesCategory = category === "semua" || ev.category === category;
+      const expired = isEventExpired(ev.date);
+      const matchesTime = timeFilter === "semua" || (timeFilter === "mendatang" ? !expired : expired);
       const matchesQuery = ev.title
         .toLowerCase()
         .includes(query.trim().toLowerCase());
-      return matchesCategory && matchesQuery;
+      return matchesCategory && matchesTime && matchesQuery;
     });
-  }, [category, events, query]);
+  }, [category, events, query, timeFilter]);
 
   const eventsThisMonth = useMemo(
     () =>
@@ -145,7 +149,7 @@ export default function EventCalendarPage() {
   );
 
   const stats = useMemo(() => {
-    const monthAll = events.filter((ev) => {
+    const monthAll = filteredEvents.filter((ev) => {
       const d = new Date(`${ev.date}T00:00:00`);
       return d.getFullYear() === year && d.getMonth() === month;
     });
@@ -154,7 +158,7 @@ export default function EventCalendarPage() {
       workshop: monthAll.filter((e) => e.category === "workshop").length,
       parenting: monthAll.filter((e) => e.category === "parenting").length,
     };
-  }, [events, year, month]);
+  }, [filteredEvents, year, month]);
 
   const grid = useMemo(() => buildMonthGrid(year, month), [year, month]);
 
@@ -240,53 +244,40 @@ export default function EventCalendarPage() {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.18, ease: "easeOut" }}
-            className="mt-6 flex flex-col gap-4 rounded-2xl border border-marica-ink/10 bg-white p-4 shadow-sm lg:flex-row lg:items-center lg:justify-between"
+            className="mt-6 rounded-2xl border border-marica-ink/10 bg-white p-4 shadow-sm"
           >
-            <div className="relative w-full lg:max-w-xs">
-              <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-marica-ink-soft" />
-              <input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                type="text"
-                placeholder="Cari event atau workshop..."
-                className="w-full rounded-full border border-marica-ink/10 bg-white py-2.5 pl-10 pr-4 font-body text-sm text-marica-ink placeholder:text-marica-ink-soft/70 focus:outline-none focus:ring-2 focus:ring-marica-amber/40"
-              />
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div className="relative w-full lg:max-w-sm">
+                <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-marica-ink-soft" />
+                <input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  type="text"
+                  placeholder="Cari event atau workshop..."
+                  className="w-full rounded-full border border-marica-ink/10 bg-white py-2.5 pl-10 pr-4 font-body text-sm text-marica-ink placeholder:text-marica-ink-soft/70 focus:outline-none focus:ring-2 focus:ring-marica-amber/40"
+                />
+              </div>
+
+              <div className="flex shrink-0 items-center gap-1 self-start rounded-full bg-marica-cream p-1 lg:self-auto">
+                <ViewToggleButton active={view === "kalender"} onClick={() => setView("kalender")} icon={<CalendarIcon className="h-4 w-4" />} label="Kalender" />
+                <ViewToggleButton active={view === "daftar"} onClick={() => setView("daftar")} icon={<List className="h-4 w-4" />} label="Daftar" />
+              </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
-              <FilterPill
-                active={category === "semua"}
-                onClick={() => setCategory("semua")}
-              >
-                Semua
-              </FilterPill>
-              <FilterPill
-                active={category === "workshop"}
-                onClick={() => setCategory("workshop")}
-              >
-                Weekend Workshop
-              </FilterPill>
-              <FilterPill
-                active={category === "parenting"}
-                onClick={() => setCategory("parenting")}
-              >
-                Sesi Parenting
-              </FilterPill>
-            </div>
+            <div className="mt-4 flex flex-col gap-3 border-t border-marica-ink/5 pt-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-center sm:gap-x-6">
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                <span className="mr-1 text-xs font-bold uppercase tracking-wide text-marica-ink-soft">Waktu</span>
+                <FilterPill active={timeFilter === "mendatang"} onClick={() => setTimeFilter("mendatang")}>Mendatang</FilterPill>
+                <FilterPill active={timeFilter === "sebelumnya"} onClick={() => setTimeFilter("sebelumnya")}>Sebelumnya</FilterPill>
+                <FilterPill active={timeFilter === "semua"} onClick={() => setTimeFilter("semua")}>Semua event</FilterPill>
+              </div>
 
-            <div className="flex shrink-0 items-center gap-1 rounded-full bg-marica-cream p-1">
-              <ViewToggleButton
-                active={view === "kalender"}
-                onClick={() => setView("kalender")}
-                icon={<CalendarIcon className="h-4 w-4" />}
-                label="Kalender"
-              />
-              <ViewToggleButton
-                active={view === "daftar"}
-                onClick={() => setView("daftar")}
-                icon={<List className="h-4 w-4" />}
-                label="Daftar"
-              />
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                <span className="mr-1 text-xs font-bold uppercase tracking-wide text-marica-ink-soft">Kategori</span>
+                <FilterPill active={category === "semua"} onClick={() => setCategory("semua")}>Semua</FilterPill>
+                <FilterPill active={category === "workshop"} onClick={() => setCategory("workshop")}>Weekend Workshop</FilterPill>
+                <FilterPill active={category === "parenting"} onClick={() => setCategory("parenting")}>Sesi Parenting</FilterPill>
+              </div>
             </div>
           </motion.div>
 
@@ -381,8 +372,8 @@ export default function EventCalendarPage() {
                               eventsByDate.get(iso) ?? []
                             ).filter(
                               (ev) =>
-                                category === "semua" ||
-                                ev.category === category,
+                                (category === "semua" || ev.category === category) &&
+                                (timeFilter === "semua" || (timeFilter === "mendatang" ? !isEventExpired(ev.date) : isEventExpired(ev.date))),
                             );
                             const isToday = isSameDay(cell.date, today);
                             const isWeekend = (cell.date.getDay() + 6) % 7 >= 5;

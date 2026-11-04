@@ -20,10 +20,8 @@ type EventRecord = {
 export async function GET() {
   try {
     await expireStalePendingBookings();
-    const visibleAfter = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-
     const events = await prisma.event.findMany({
-      where: { isActive: true, eventDate: { gte: visibleAfter } },
+      where: { isActive: true },
       orderBy: { eventDate: "asc" },
       include: {
         bookings: {
