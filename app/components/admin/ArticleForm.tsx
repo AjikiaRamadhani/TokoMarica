@@ -358,6 +358,7 @@ export default function ArticleForm({
                   <option value="">Pilih provider</option>
                   <option value="YouTube">YouTube</option>
                   <option value="Vimeo">Vimeo</option>
+                  <option value="Google Drive">Google Drive</option>
                   <option value="Lainnya">Lainnya</option>
                 </select>
               </div>

@@ -9,6 +9,7 @@ import ArticleComments from "../../components/Articlecomments";
 import Footer from "../../components/Footer";
 import NewsletterForm from "../../components/Newsletterform";
 import ShareButton from "../../components/ShareButton";
+import VideoEmbed from "../../components/VideoEmbed";
 import { auth } from "@/lib/auth";
 import { categoryBadgeStyle, resolveCategoryColor } from "@/lib/category-color";
 import { prisma } from "@/lib/prisma";
@@ -35,6 +36,8 @@ type ApiArticleDetail = {
   excerpt: string | null;
   content: string;
   coverImageUrl: string | null;
+  videoUrl: string | null;
+  videoProvider: string | null;
   publishedAt: string | null;
   updatedAt: string;
   views: number;
@@ -279,6 +282,16 @@ export default async function ArtikelDetailPage({ params }: { params: Params }) 
               priority
             />
           </div>
+
+          {article.videoUrl && (
+            <div className="mt-8">
+              <VideoEmbed
+                videoUrl={article.videoUrl}
+                videoProvider={article.videoProvider}
+                title={article.title}
+              />
+            </div>
+          )}
 
           {/* `content` di database disimpan sebagai satu string (hasil rich
               text editor di admin), beda dari data statis lama yang
