@@ -155,7 +155,7 @@ export async function POST(request: Request) {
             shippingCost: 0,
             subtotal: offlineSubtotal,
             total: offlineSubtotal - offlineDiscount,
-            paymentMethod: `offline_${body.paymentMethod.toLowerCase()}`,
+            paymentMethod: `offline_${body.paymentMethod!.toLowerCase()}`,
             paidAt: new Date(),
             fulfillmentNote: "Checkout offline melalui kasir.",
             items: {
