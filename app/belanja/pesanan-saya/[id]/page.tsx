@@ -9,7 +9,7 @@ import Navbar from "../../../components/Navbar";
 import Footer from "../../../components/Footer";
 import FeedbackPopup from "../../../components/FeedbackPopup";
 import CancelOrderModal from "../../../components/belanja/CancelOrderModal";
-import { payWithSnap } from "../../../components/belanja/snap";
+import { buildCheckoutWhatsAppUrl } from "@/lib/whatsapp-checkout";
 import {
   ORDER_STATUS_LABEL,
   ORDER_STATUS_STYLE,
@@ -92,49 +92,17 @@ export default function OrderDetailPage() {
     }
     setIsPaying(true);
     setError(null);
-    let paymentReference = order.midtransSnapToken;
-    const hasLegacyWhatsAppFallback = paymentReference?.startsWith("https://wa.me/") ?? false;
-    if (!paymentReference || hasLegacyWhatsAppFallback) {
-      try {
-        const response = await fetch(`/api/orders/${order.id}`, { method: "POST" });
-        const refreshed = await response.json();
-        if (!response.ok || !refreshed.midtransSnapToken) throw new Error(refreshed.error ?? "Referensi pembayaran belum tersedia");
-        paymentReference = refreshed.midtransSnapToken;
-        setOrder(refreshed as ApiOrder);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Gagal menyiapkan pembayaran");
-        setIsPaying(false);
-        return;
-      }
-    }
-    if (!paymentReference) {
-      setError("Referensi pembayaran tidak ditemukan. Silakan coba checkout ulang.");
-      setIsPaying(false);
-      return;
-    }
-    if (paymentReference.startsWith("http")) {
-      window.location.href = paymentReference;
-      return;
-    }
     try {
-      await payWithSnap(paymentReference, {
-        onSuccess: () => {
-          router.push(`/belanja/pembayaran/berhasil?order=${encodeURIComponent(order.id)}`);
-          void fetch(`/api/orders/${order.id}`, { method: "POST" })
-            .catch(() => undefined)
-            .finally(() => loadOrder());
-        },
-        onPending: () => void loadOrder(),
-        onError: () =>
-          setError("Pembayaran gagal diproses. Silakan coba lagi."),
-        onClose: () => {
-          void fetch(`/api/orders/${order.id}`, { method: "POST" })
-            .catch(() => undefined)
-            .finally(() => loadOrder());
-        },
-      });
+      const response = await fetch("/api/company", { cache: "no-store" });
+      const company = await response.json();
+      if (!response.ok || !company.whatsapp) {
+        throw new Error("Nomor WhatsApp checkout belum dikonfigurasi");
+      }
+      const whatsappUrl = buildCheckoutWhatsAppUrl(company.whatsapp, order);
+      if (!whatsappUrl) throw new Error("Nomor WhatsApp checkout tidak valid");
+      window.location.href = whatsappUrl;
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Gagal membuka pembayaran");
+      setError(err instanceof Error ? err.message : "Gagal membuka WhatsApp");
     } finally {
       setIsPaying(false);
     }

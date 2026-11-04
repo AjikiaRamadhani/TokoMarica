@@ -100,7 +100,7 @@ const navItems = [
     label: "Pengaturan",
     href: "/admin/pengaturan",
     icon: Settings,
-    enabled: false,
+    enabled: true,
   },
 ];
 

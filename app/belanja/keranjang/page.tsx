@@ -255,7 +255,11 @@ export default function CartPage() {
       if (!response.ok) throw new Error(json?.error ?? "Gagal membuat pesanan");
 
       setAddressModalOpen(false);
-      router.push("/belanja/pesanan-saya");
+      if (typeof json?.whatsappUrl === "string") {
+        window.location.href = json.whatsappUrl;
+      } else {
+        router.push("/belanja/pesanan-saya");
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Gagal membuat pesanan");
     } finally {

@@ -181,7 +181,6 @@ export type ApiOrder = {
   pointsUsed: number;
   pointsDiscount: number;
   total: number;
-  midtransSnapToken: string | null;
   paidAt: string | null;
   processingAt: string | null;
   shippedAt: string | null;

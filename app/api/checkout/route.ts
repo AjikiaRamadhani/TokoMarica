@@ -2,8 +2,11 @@ import { NextResponse } from "next/server";
 import crypto from "crypto";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
-import { snap } from "@/lib/midtrans";
-import { calculatePointsDiscount, refundRedeemedPointsInTransaction } from "@/lib/points";
+import { calculatePointsDiscount } from "@/lib/points";
+import {
+  buildCheckoutWhatsAppUrl,
+  normalizeWhatsAppNumber,
+} from "@/lib/whatsapp-checkout";
 import {
   validateOptionalText,
   validateText,
@@ -26,6 +29,23 @@ export async function POST(request: Request) {
   }
 
   try {
+    const company = await prisma.companyProfile.findFirst({
+      select: { whatsapp: true },
+    });
+    if (!company?.whatsapp) {
+      return NextResponse.json(
+        { error: "Nomor WhatsApp checkout belum dikonfigurasi oleh admin" },
+        { status: 503 },
+      );
+    }
+    const checkoutWhatsAppNumber = normalizeWhatsAppNumber(company.whatsapp);
+    if (!checkoutWhatsAppNumber) {
+      return NextResponse.json(
+        { error: "Nomor WhatsApp checkout belum valid" },
+        { status: 503 },
+      );
+    }
+
     const body = await request.json();
     const {
       shippingName,
@@ -153,7 +173,7 @@ export async function POST(request: Request) {
 
     const orderNumber = generateOrderNumber();
 
-    const checkoutResult = await prisma.$transaction(async (tx) => {
+    const { order } = await prisma.$transaction(async (tx) => {
       const productIds = checkoutItems.map((item) => item.productId);
       const lockedProducts = await tx.$queryRaw<Array<{ id: string; name: string; stock: number; price: number }>>`
         SELECT id, name, stock
@@ -252,8 +272,7 @@ export async function POST(request: Request) {
           pointsDiscount,
           userVoucherId: userVoucherIdValue,
           total,
-          paymentMethod: "midtrans",
-          midtransOrderId: orderNumber,
+          paymentMethod: "whatsapp",
           items: {
             create: checkoutItems.map((item) => ({
               ...(stockMap.get(item.productId)
@@ -318,109 +337,6 @@ export async function POST(request: Request) {
       return { order, subtotal, total, pointsUsed, pointsDiscount, voucherDiscount };
     });
 
-    const { order, total, pointsUsed, pointsDiscount, voucherDiscount } = checkoutResult;
-
-    const itemDetailsBase = [
-      ...order.items.map((item) => ({
-        id: item.productId,
-        // Use the effective line subtotal so Midtrans matches bundle discounts.
-        price: item.subtotal,
-        quantity: 1,
-        name: `${item.productName} (${item.quantity}x)`.slice(0, 50),
-      })),
-      {
-        id: "SHIPPING",
-        price: shippingCostValue,
-        quantity: 1,
-        name: `Ongkir (${shippingCourier ?? "-"} ${shippingService ?? ""})`,
-      },
-    ];
-    const itemDetailsBaseTotal = itemDetailsBase.reduce((sum, item) => sum + item.price * item.quantity, 0);
-    const bundleDiscount = Math.max(0, itemDetailsBaseTotal - total - pointsDiscount - voucherDiscount);
-    const itemDetails = [
-      ...itemDetailsBase,
-      ...(bundleDiscount > 0
-        ? [{ id: "BUNDLE_DISCOUNT", price: -bundleDiscount, quantity: 1, name: "Diskon Paket Hemat" }]
-        : []),
-      ...(pointsDiscount > 0
-        ? [{ id: "POINTS_DISCOUNT", price: -pointsDiscount, quantity: 1, name: "Diskon Marica Points" }]
-        : []),
-      ...(voucherDiscount > 0
-        ? [{ id: "VOUCHER_DISCOUNT", price: -voucherDiscount, quantity: 1, name: "Diskon Voucher Marica" }]
-        : []),
-    ];
-    const itemDetailsTotal = itemDetails.reduce((sum, item) => sum + item.price * item.quantity, 0);
-    if (itemDetailsTotal !== total) {
-      console.error("[POST /api/checkout] Midtrans item total mismatch", {
-        orderId: order.orderNumber,
-        grossAmount: total,
-        itemDetailsTotal,
-      });
-      throw Object.assign(new Error("MIDTRANS_ITEM_TOTAL_MISMATCH"), {
-        statusCode: 400,
-        detail: "Total item pesanan tidak sesuai dengan total pembayaran",
-      });
-    }
-
-    // Minta Snap Token dari Midtrans
-    let transaction;
-    try {
-      transaction = await snap.createTransaction({
-        transaction_details: {
-          order_id: orderNumber,
-          gross_amount: total,
-        },
-        customer_details: {
-          first_name: shippingNameValue,
-          email: session.user.email ?? undefined,
-          phone: shippingPhoneValue,
-          shipping_address: {
-            address: shippingAddressValue,
-            city: shippingCityValue,
-            postal_code: shippingPostalCodeValue,
-          },
-        },
-        item_details: itemDetails,
-      } as Parameters<typeof snap.createTransaction>[0]);
-
-      await prisma.order.update({
-        where: { id: order.id },
-        // Kolom lama dipakai sebagai payment reference agar kompatibel dengan
-        // order existing: token Midtrans atau URL Checkout Page/WhatsApp.
-        data: { midtransSnapToken: transaction.token ?? transaction.redirect_url },
-      });
-
-      await prisma.notification.create({
-        data: {
-          userId: session.user.id,
-          type: "ORDER_CREATED",
-          title: "Pesanan berhasil dibuat",
-          message: `Pesanan ${order.orderNumber} menunggu pembayaran.`,
-          href: `/belanja/pesanan-saya/${order.id}`,
-          relatedId: order.id,
-        },
-      });
-    } catch (error) {
-      await prisma.$transaction(async (tx) => {
-        if (pointsUsed > 0) {
-          await refundRedeemedPointsInTransaction(tx, {
-            userId: session.user.id,
-            points: pointsUsed,
-            referenceId: order.id,
-            idempotencyKey: `order-points-reversal:${order.id}`,
-          });
-        }
-        if (userVoucherIdValue) {
-          await tx.userVoucher.updateMany({
-            where: { id: userVoucherIdValue, status: "USED" },
-            data: { status: "AVAILABLE", usedAt: null },
-          });
-        }
-        await tx.order.delete({ where: { id: order.id } });
-      });
-      throw error;
-    }
-
     // Kosongin keranjang setelah order berhasil dibuat
     await prisma.cartItem.deleteMany({
       where: {
@@ -429,26 +345,27 @@ export async function POST(request: Request) {
       },
     });
 
-    return NextResponse.json(
-      {
-        order,
-        snapToken: transaction.token,
-        redirectUrl: transaction.redirect_url,
-      },
-      { status: 201 }
-    );
+    const whatsappUrl = buildCheckoutWhatsAppUrl(checkoutWhatsAppNumber, order);
+    if (!whatsappUrl) {
+      throw Object.assign(new Error("WHATSAPP_NUMBER_INVALID"), {
+        statusCode: 503,
+        detail: "Nomor WhatsApp checkout tidak valid",
+      });
+    }
+
+    return NextResponse.json({ order, whatsappUrl }, { status: 201 });
   } catch (error) {
     const statusCode =
       typeof error === "object" && error && "statusCode" in error && typeof error.statusCode === "number"
         ? error.statusCode
         : 500;
 
-    if (statusCode === 400) {
+    if (statusCode === 400 || statusCode === 503) {
       const detail =
         typeof error === "object" && error && "detail" in error && typeof error.detail === "string"
           ? error.detail
           : "Stok produk tidak cukup";
-      return NextResponse.json({ error: detail }, { status: 400 });
+      return NextResponse.json({ error: detail }, { status: statusCode });
     }
 
     console.error("[POST /api/checkout]", error);
